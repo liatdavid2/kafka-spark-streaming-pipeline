@@ -5,4 +5,4 @@ WORKDIR /app
 COPY spark_stream.py .
 COPY schema.py .
 
-CMD ["/opt/bitnami/spark/bin/spark-submit","spark_stream.py"]
+CMD ["/opt/spark/bin/spark-submit","spark_stream.py"]
