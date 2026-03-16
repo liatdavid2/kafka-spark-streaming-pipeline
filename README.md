@@ -137,3 +137,29 @@ Checkpointing allows Spark to recover from failures without losing data.
 
 **Scalable storage**
 Partitioned Parquet storage supports efficient querying on large datasets.
+
+---
+
+## Deployment
+
+The system runs using **Docker Compose** and can be deployed on distributed infrastructure such as Kubernetes or cloud platforms.
+
+---
+
+## Monitoring
+
+Streaming performance can be monitored through the **Spark UI**, which exposes metrics such as batch duration, input rows, and processing latency.
+
+---
+
+## Fault Tolerance
+
+Spark **checkpointing** stores Kafka offsets and streaming state, allowing the pipeline to resume processing after failures without data loss.
+
+---
+
+## Backpressure Control
+
+Backpressure is controlled using `maxOffsetsPerTrigger`, which limits how many events Spark consumes per micro-batch and prevents overload during traffic spikes.
+
+---
