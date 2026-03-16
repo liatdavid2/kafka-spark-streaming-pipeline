@@ -2,3 +2,5 @@
 .env
 /.venv
 Command.txt
+/checkpoints
+/output

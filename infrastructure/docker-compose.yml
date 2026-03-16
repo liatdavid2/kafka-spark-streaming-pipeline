@@ -48,5 +48,5 @@ services:
       - kafka
 
     volumes:
-      - ../output:/output
-      - ../checkpoints:/checkpoints
+      - ../output:/app/output
+      - ../checkpoints:/app/checkpoints
