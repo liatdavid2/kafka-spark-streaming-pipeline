@@ -3,20 +3,61 @@ import time
 import pandas as pd
 
 from kafka import KafkaProducer
+from kafka.errors import NoBrokersAvailable
 
+
+KAFKA_BROKER = "kafka:9092"
+TOPIC = "unsw-events"
+BATCH_SIZE = 100
+
+# Load dataset
 df = pd.read_parquet("/data/UNSW_Flow.parquet")
 
-producer = KafkaProducer(
-    bootstrap_servers="kafka:9092",
-    value_serializer=lambda v: json.dumps(v).encode("utf-8")
-)
+producer = None
 
-topic = "unsw-events"
+# Retry until Kafka is ready
+while producer is None:
+    try:
+        producer = KafkaProducer(
+            bootstrap_servers=KAFKA_BROKER,
+            value_serializer=lambda v: json.dumps(v).encode("utf-8"),
+            linger_ms=50,
+            batch_size=16384,
+            acks="all",
+            retries=5
+        )
+        print("Connected to Kafka")
+    except NoBrokersAvailable:
+        print("Kafka not ready, retrying in 3 seconds...")
+        time.sleep(3)
+
+
+batch = []
 
 for _, row in df.iterrows():
 
-    producer.send(topic, row.to_dict())
+    batch.append(row.to_dict())
 
-    time.sleep(0.01)
+    if len(batch) >= BATCH_SIZE:
 
-producer.flush()
+        for event in batch:
+            producer.send(TOPIC, event)
+
+        producer.flush()
+
+        print(f"Sent batch of {BATCH_SIZE} events")
+
+        batch = []
+
+        # small delay to simulate streaming pressure
+        time.sleep(0.5)
+
+
+# Send remaining events
+if batch:
+    for event in batch:
+        producer.send(TOPIC, event)
+
+    producer.flush()
+
+print("Finished sending events")
