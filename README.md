@@ -57,6 +57,21 @@ Processed events stored as **partitioned Parquet files** by date and hour for sc
             +----------------------+
             | Partitioned Parquet  |
             |  Data Lake Storage   |
+            | date / hour          |
+            +----------+-----------+
+                       |
+                       v
+            +----------------------+
+            |   Model Training     |
+            | Random Forest Model  |
+            | Reads Parquet Data   |
+            +----------+-----------+
+                       |
+                       v
+            +----------------------+
+            |   Versioned Models   |
+            |  Model Artifacts     |
+            |  metrics / features  |
             +----------------------+
 ```
 
