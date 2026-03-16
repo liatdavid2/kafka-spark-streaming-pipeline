@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+import os
 
 import joblib
 import pandas as pd
@@ -21,7 +22,18 @@ from utils import make_model_version_path
 
 
 def load_data() -> pd.DataFrame:
-    df = pd.read_parquet(DATA_PATH)
+
+    partition = os.getenv("TRAIN_PARTITION")
+
+    if partition:
+        data_path = Path(DATA_PATH) / partition
+        print(f"Training on partition: {data_path}")
+    else:
+        data_path = Path(DATA_PATH)
+        print(f"Training on full dataset: {data_path}")
+
+    df = pd.read_parquet(data_path)
+
     return df
 
 
@@ -56,6 +68,7 @@ def save_artifacts(model, metrics: dict, feature_columns: list[str], output_path
 
 
 def main() -> None:
+    partition = os.getenv("TRAIN_PARTITION")
     df = load_data()
     validate_columns(df)
 
@@ -87,6 +100,7 @@ def main() -> None:
 
     y_pred = model.predict(X_test)
     metrics = evaluate_model(y_test, y_pred)
+    metrics["partition"] = partition
 
     output_path = make_model_version_path(MODELS_DIR)
     save_artifacts(model, metrics, feature_columns, output_path)

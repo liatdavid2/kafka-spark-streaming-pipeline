@@ -1,8 +1,14 @@
 from datetime import datetime
 from pathlib import Path
 
+def make_model_version_path(models_dir: str | Path) -> Path:
 
-def make_model_version_path(models_dir: Path, prefix: str = "intrusion_model") -> Path:
-    models_dir.mkdir(parents=True, exist_ok=True)
-    timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
-    return models_dir / f"{prefix}_{timestamp}.joblib"
+    models_dir = Path(models_dir)
+
+    # full timestamp
+    run_id = datetime.utcnow().strftime("%Y-%m-%d-%H-%M-%S")
+
+    run_dir = models_dir / run_id
+    run_dir.mkdir(parents=True, exist_ok=True)
+
+    return run_dir / "intrusion_model.joblib"
