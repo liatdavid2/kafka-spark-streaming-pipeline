@@ -46,7 +46,10 @@ json_df = kafka_df.select(
     col("value").cast("string").alias("json")
 )
 
-
+debug = json_df.writeStream \
+    .format("console") \
+    .option("truncate", False) \
+    .start()
 # ----------------------------------------------------
 # Parse JSON using schema
 # ----------------------------------------------------
@@ -56,6 +59,7 @@ parsed_df = (
     .select(from_json(col("json"), flow_schema).alias("data"))
     .select("data.*")
 )
+
 
 
 # ----------------------------------------------------
