@@ -10,8 +10,23 @@ KAFKA_BROKER = "kafka:9092"
 TOPIC = "unsw-events"
 BATCH_SIZE = 100
 
+
 # Load dataset
 df = pd.read_parquet("/data/UNSW_Flow.parquet")
+
+
+# Use binary label as the training label
+if "binary_label" in df.columns:
+    df["label"] = df["binary_label"]
+
+
+# Remove other labels if exist
+if "attack_label" in df.columns:
+    df = df.drop(columns=["attack_label"])
+
+if "binary_label" in df.columns:
+    df = df.drop(columns=["binary_label"])
+
 
 producer = None
 
@@ -49,7 +64,7 @@ for _, row in df.iterrows():
 
         batch = []
 
-        # small delay to simulate streaming pressure
+        # simulate streaming pressure
         time.sleep(0.5)
 
 
@@ -60,4 +75,6 @@ if batch:
 
     producer.flush()
 
+
 print("Finished sending events")
+producer.close()

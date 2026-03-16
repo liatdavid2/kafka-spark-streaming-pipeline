@@ -43,5 +43,6 @@ flow_schema = StructType([
     StructField("ct_src_ltm", IntegerType(), True),
     StructField("ct_src_dport_ltm", IntegerType(), True),
     StructField("ct_dst_sport_ltm", IntegerType(), True),
-    StructField("ct_dst_src_ltm", IntegerType(), True)
+    StructField("ct_dst_src_ltm", IntegerType(), True),
+    StructField("label", IntegerType(), True)
 ])
