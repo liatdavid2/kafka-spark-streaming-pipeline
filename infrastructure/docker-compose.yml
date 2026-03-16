@@ -1,5 +1,15 @@
 services:
 
+  training:
+    build:
+      context: ../training
+    container_name: training
+    volumes:
+      - ../output:/app/output
+      - ../models:/app/models
+    depends_on:
+      - spark
+
   kafka:
     image: confluentinc/cp-kafka:7.5.0
     hostname: kafka
