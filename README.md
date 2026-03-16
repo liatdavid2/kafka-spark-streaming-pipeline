@@ -56,6 +56,31 @@ Processed events stored as **partitioned Parquet files** by date and hour for sc
 ```
 
 ---
+## Data Lake Structure
+
+Processed events are stored as **partitioned Parquet files** in a data lake layout.
+
+```text
+output/
+  unsw_stream/
+    date=YYYY-MM-DD/
+      hour=HH/
+        part-xxxxx.parquet
+```
+
+## Partitioning
+
+Data is partitioned by **date** and **hour** based on the processing timestamp.
+
+## File Format
+
+Data is stored in **Parquet**, a columnar format optimized for large-scale analytics.
+
+## Streaming Writes
+
+Spark Structured Streaming continuously appends new files to the correct partition for each micro-batch.
+
+---
 
 # Pipeline Stages
 
