@@ -1,10 +1,10 @@
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, from_json, current_timestamp
+from pyspark.sql.functions import col, from_json, current_timestamp, date_format
 from schema import flow_schema
 
+# Create Spark session
 spark = SparkSession.builder \
-    .appName("Kafka-Spark-Streaming-UNSW") \
-    .config("spark.sql.shuffle.partitions", "4") \
+    .appName("KafkaSparkStreaming") \
     .getOrCreate()
 
 spark.sparkContext.setLogLevel("WARN")
@@ -16,6 +16,7 @@ kafka_df = spark.readStream \
     .option("subscribe", "unsw-events") \
     .option("startingOffsets", "earliest") \
     .option("maxOffsetsPerTrigger", 100) \
+    .option("failOnDataLoss", "false") \
     .load()
 
 # Convert Kafka value to string
@@ -27,10 +28,15 @@ parsed_df = json_df.select(
 ).select("data.*")
 
 # Add processing timestamp
-final_df = parsed_df.withColumn(
+with_time_df = parsed_df.withColumn(
     "processing_time",
     current_timestamp()
 )
+
+# Derive partition columns
+final_df = with_time_df \
+    .withColumn("date", date_format(col("processing_time"), "yyyy-MM-dd")) \
+    .withColumn("hour", date_format(col("processing_time"), "HH"))
 
 # Write stream to parquet
 query = final_df.writeStream \
@@ -38,6 +44,7 @@ query = final_df.writeStream \
     .outputMode("append") \
     .option("path", "/app/output/unsw_stream") \
     .option("checkpointLocation", "/app/checkpoints/unsw_stream") \
+    .partitionBy("date", "hour") \
     .trigger(processingTime="5 seconds") \
     .start()
 
