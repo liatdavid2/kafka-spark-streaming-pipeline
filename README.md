@@ -21,7 +21,38 @@ Processed events stored as **partitioned Parquet files** by date and hour for sc
 # Architecture
 
 ```
-Dataset → Kafka Producer → Kafka Topic → Spark Streaming → Parquet Storage
+            +----------------------+
+            |   UNSW-NB15 Dataset  |
+            |  Network Flow Events |
+            +----------+-----------+
+                       |
+                       v
+            +----------------------+
+            |     Kafka Producer   |
+            |  Streams JSON events |
+            +----------+-----------+
+                       |
+                       v
+            +----------------------+
+            |      Kafka Topic     |
+            |  Distributed Queue   |
+            +----------+-----------+
+                       |
+                       v
+            +----------------------+
+            | Spark Structured     |
+            | Streaming Engine     |
+            |                      |
+            | Micro-batch: 100     |
+            | Trigger: 5 seconds   |
+            | Checkpointing        |
+            +----------+-----------+
+                       |
+                       v
+            +----------------------+
+            | Partitioned Parquet  |
+            |  Data Lake Storage   |
+            +----------------------+
 ```
 
 ---
