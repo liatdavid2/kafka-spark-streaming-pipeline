@@ -1,5 +1,8 @@
 # Kafka–Spark Streaming Pipeline
 
+A real-time cybersecurity data pipeline built with Kafka and Spark
+that processes network events and trains an intrusion detection model.
+
 ## Problem
 
 Modern security systems generate massive volumes of network events that must be processed reliably in real time for monitoring, analytics, and machine learning.
@@ -241,3 +244,64 @@ Spark **checkpointing** stores Kafka offsets and streaming state, allowing the p
 Backpressure is controlled using `maxOffsetsPerTrigger`, which limits how many events Spark consumes per micro-batch and prevents overload during traffic spikes.
 
 ---
+
+## Quick Start
+
+### Clean Environment and Rebuild
+
+```bash
+# stop containers and remove volumes
+docker compose down -v
+
+# rebuild images from scratch
+docker compose build --no-cache
+
+# start the full pipeline
+docker compose up
+```
+
+### View Logs
+
+```bash
+docker compose logs spark
+docker compose logs producer
+```
+
+### Clean Streaming Output
+
+If the streaming job needs to be restarted from a clean state:
+
+```bash
+docker exec -it spark bash
+rm -rf /app/output/*
+rm -rf /app/checkpoints/*
+exit
+```
+
+### Inspect Data with Spark
+
+You can inspect the generated Parquet data using the Spark shell.
+
+```bash
+docker exec -it spark bash
+/opt/spark/bin/pyspark
+```
+
+Example query:
+
+```python
+df = spark.read.parquet("/app/output/unsw_stream")
+df.show(2)
+```
+
+### Run Model Training
+
+After the streaming pipeline has produced data, the training job can be executed:
+
+```bash
+docker compose down training
+docker compose build training
+docker compose up training
+```
+
+The training job reads the generated Parquet partitions and trains the intrusion detection model.
