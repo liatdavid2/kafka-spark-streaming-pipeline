@@ -4,6 +4,8 @@
 
 Modern security systems generate massive volumes of network events that must be processed reliably in real time for monitoring, analytics, and machine learning.
 
+This architecture is designed to scale horizontally and can support **millions of events per minute** using Kafka ingestion and distributed Spark streaming.
+
 ## Dataset
 
 This project uses the **UNSW-NB15 network flow dataset**, a cybersecurity dataset containing detailed network traffic features such as ports, packet counts, bytes, and flow duration.
