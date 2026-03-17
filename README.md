@@ -236,6 +236,136 @@ models/
 ```
 ---
 
+## Automatic Retraining
+
+The system includes an automatic retraining mechanism triggered by new incoming data partitions.
+
+### How it works
+
+* Spark streaming writes processed data into **time-based partitions**:
+
+  ```
+  /app/output/unsw_stream/date=YYYY-MM-DD/hour=HH
+  ```
+
+* A dedicated **training service (watcher)** continuously monitors the output directory.
+
+* When a new partition is detected:
+
+  * The system **automatically triggers model retraining**
+  * Training runs on the **latest completed partition** (to avoid partial data)
+
+---
+
+### Demo
+
+#### 1. Start the training watcher
+
+```bash
+docker compose up training
+```
+
+---
+
+#### 2. Simulate new incoming data
+
+```bash
+docker exec -it spark bash
+cp -r /app/output/unsw_stream/date=2026-03-19 /app/output/unsw_stream/date=2026-03-20
+```
+
+---
+
+#### 3. Automatic retraining is triggered
+
+```text
+Training on partition: /app/output/unsw_stream/date=2026-03-20/hour=13
+
+Classification report:
+              precision    recall  f1-score   support
+
+           0       1.00      1.00      1.00       447
+           1       1.00      1.00      1.00        13
+
+    accuracy                           1.00       460
+
+Confusion matrix:
+[[447   0]
+ [  0  13]]
+
+Saved model to: /app/models/2026-03-17-14-16-22/intrusion_model.joblib
+```
+---
+
+## Retraining Flow
+
+The automatic retraining mechanism is implemented via a lightweight watcher service.
+
+1. **Container startup**
+
+```python
+CMD ["python", "retrain_watcher.py"]
+```
+
+The training container runs a watcher script continuously.
+
+---
+
+2. **Monitoring loop**
+
+```python
+while True:
+    partitions = set(get_partitions())
+    new_partitions = partitions - known_partitions
+```
+
+The system continuously scans for new data partitions.
+New folders act as the **trigger** for retraining.
+
+---
+
+3. **New data detection**
+
+```python
+if new_partitions:
+    print("New partitions detected:", new_partitions)
+```
+
+When new data is detected, the system initiates retraining.
+
+---
+
+4. **Selecting stable data**
+
+```python
+sorted_parts = sorted(partitions)
+previous_partition = sorted_parts[-2]
+```
+
+Training is performed on the **latest completed partition**,
+avoiding partially written data.
+
+---
+
+5. **Triggering training**
+
+```python
+subprocess.run(["python", "train.py"])
+```
+
+This command executes the training pipeline and produces a new model.
+
+---
+
+### Training Strategy
+
+* The system does not train on the newest partition
+* **It trains on the previous (fully completed) partition**
+
+This ensures the model is trained only on stable, fully written data, avoiding partial or incomplete streaming inputs.
+
+---
+
 ## Deployment
 
 The system runs using **Docker Compose** and can be deployed on distributed infrastructure such as Kubernetes or cloud platforms.
