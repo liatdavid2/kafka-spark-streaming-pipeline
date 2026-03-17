@@ -1,7 +1,6 @@
 # Kafka–Spark Streaming Pipeline
 
-A real-time cybersecurity data pipeline built with Kafka and Spark
-that processes network events and trains an intrusion detection model.
+A real-time cybersecurity data pipeline built with Kafka and Spark that processes network events, stores partitioned data, and automatically retrains an intrusion detection model based on new incoming data.
 
 ## Problem
 
