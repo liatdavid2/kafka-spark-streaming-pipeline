@@ -26,55 +26,61 @@ Processed events stored as **partitioned Parquet files** by date and hour for sc
 # Architecture
 
 ```
-            +----------------------+
-            |   UNSW-NB15 Dataset  |
-            |  Network Flow Events |
-            +----------+-----------+
-                       |
-                       v
-            +----------------------+
-            |     Kafka Producer   |
-            |  Streams JSON events |
-            +----------+-----------+
-                       |
-                       v
-            +----------------------+
-            |      Kafka Topic     |
-            |  Distributed Queue   |
-            +----------+-----------+
-                       |
-                       v
-            +----------------------+
-            | Spark Structured     |
-            | Streaming Engine     |
-            |                      |
-            | Micro-batch: 100     |
-            | Trigger: 5 seconds   |
-            | Checkpointing        |
-            +----------+-----------+
-                       |
-                       v
-            +----------------------+
-            | Partitioned Parquet  |
-            |  Data Lake Storage   |
-            | date / hour          |
-            +----------+-----------+
-                       |
-                       v
-            +----------------------+
-            |   Model Training     |
-            | Random Forest Model  |
-            | Reads Parquet Data   |
-            +----------+-----------+
-                       |
-                       v
-            +----------------------+
-            |   Versioned Models   |
-            |  Model Artifacts     |
-            |  metrics / features  |
-            +----------------------+
-```
+           +----------------------+
+           |   UNSW-NB15 Dataset  |
+           |  Network Flow Events |
+           +----------+-----------+
+                      |
+                      v
+           +----------------------+
+           |     Kafka Producer   |
+           |  Streams JSON events |
+           +----------+-----------+
+                      |
+                      v
+           +----------------------+
+           |      Kafka Topic     |
+           |  Distributed Queue   |
+           +----------+-----------+
+                      |
+                      v
+           +----------------------+
+           | Spark Structured     |
+           | Streaming Engine     |
+           |                      |
+           | Micro-batch: 100     |
+           | Trigger: 5 seconds   |
+           | Checkpointing        |
+           +----------+-----------+
+                      |
+                      v
+           +----------------------+
+           | Partitioned Parquet  |
+           |  Data Lake Storage   |
+           | date / hour          |
+           +----------+-----------+
+                      |
+                      v
+           +----------------------+
+           | Retraining Watcher   |
+           | Monitors partitions  |
+           | Detects new data     |
+           +----------+-----------+
+                      |
+                      v
+           +----------------------+
+           |   Model Training     |
+           | Random Forest Model  |
+           +----------+-----------+
+                      |
+                      v
+           +----------------------+
+           |   Versioned Models   |
+           |  Model Artifacts     |
+           |  metrics / features  |
+           +----------------------+
 
+```
 ---
 ## Data Lake Structure
 
