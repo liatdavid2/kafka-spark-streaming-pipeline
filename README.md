@@ -94,6 +94,21 @@ Processed events stored as **partitioned Parquet files** by date and hour for sc
            +----------------------+
 ```
 ---
+
+## Notebooks (EDA)
+
+The `notebooks/` directory contains exploratory data analysis used to understand the dataset before training.
+
+Includes:
+
+* Feature and label distributions
+* Class imbalance analysis
+* Time-based behavior (by hour/date)
+
+Example:
+`01_dataset_familiarization_unsw_nb15.ipynb` – initial dataset exploration and validation.
+
+---
 ## Data Lake Structure
 
 Processed events are stored as **partitioned Parquet files** in a data lake layout.

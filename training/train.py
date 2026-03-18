@@ -8,6 +8,7 @@ import joblib
 import pandas as pd
 import mlflow
 import mlflow.sklearn
+from mlflow.tracking import MlflowClient
 
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
@@ -217,7 +218,40 @@ def main() -> None:
         joblib.dump(model, model_path)
 
         # log model as artifact
-        mlflow.log_artifact(model_path)
+        #mlflow.log_artifact(model_path)
+
+        mlflow.sklearn.log_model(
+            sk_model=model,
+            artifact_path="model",
+            registered_model_name="intrusion_model"
+        )
+        # -------------------------
+        # Model Registry logic
+        # -------------------------
+        from mlflow.tracking import MlflowClient
+
+        MODEL_NAME = "intrusion_model"
+        client = MlflowClient()
+
+        latest_versions = client.get_latest_versions(MODEL_NAME, stages=["None"])
+
+        if latest_versions:
+            latest = latest_versions[0]
+
+            client.transition_model_version_stage(
+                name=MODEL_NAME,
+                version=latest.version,
+                stage="Staging"
+            )
+
+            f1_score = metrics.get("f1", 0)
+
+            if f1_score > 0.90:
+                client.transition_model_version_stage(
+                    name=MODEL_NAME,
+                    version=latest.version,
+                    stage="Production"
+                )
 
         # save + log metrics file
         metrics_path = "metrics.json"

@@ -3,4 +3,4 @@ scikit-learn
 joblib
 pyarrow
 boto3
-mlflow
+mlflow==2.12.1
