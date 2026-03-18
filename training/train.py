@@ -26,15 +26,44 @@ from utils import make_model_version_path
 
 def load_data() -> pd.DataFrame:
     partition = os.getenv("TRAIN_PARTITION")
+    base_path = Path(DATA_PATH)
 
     if partition:
-        data_path = Path(DATA_PATH) / partition
+        data_path = base_path / partition
         print(f"Training on partition: {data_path}")
-    else:
-        data_path = Path(DATA_PATH)
-        print(f"Training on full dataset: {data_path}")
 
-    df = pd.read_parquet(data_path)
+        # If partition is an hour, load all hours from the same date
+        if "hour=" in partition:
+            date_path = data_path.parent
+        else:
+            date_path = data_path
+
+    else:
+        # Fallback: load latest available date
+        date_dirs = sorted(base_path.glob("date=*"))
+        date_path = date_dirs[-1]
+
+    print(f"Loading full date: {date_path}")
+
+    dfs = []
+
+    # Iterate over all hour partitions
+    for hour_dir in sorted(date_path.glob("hour=*")):
+        print(f"Loading {hour_dir}")
+
+        df = pd.read_parquet(hour_dir)
+
+        # Extract hour and date from directory structure
+        hour = hour_dir.name.split("=")[1]
+        date = date_path.name.split("=")[1]
+
+        df["hour"] = int(hour)
+        df["date"] = date
+
+        dfs.append(df)
+
+    # Combine all partitions into a single DataFrame
+    df = pd.concat(dfs, ignore_index=True)
     return df
 
 
@@ -92,11 +121,23 @@ def main() -> None:
     #  sort by time 
     df = df.sort_values("stime") 
 
-    #  split by time 
-    split_idx = int(len(df) * (1 - TEST_SIZE))
+    # split by hour
 
-    train_df = df.iloc[:split_idx]
-    test_df = df.iloc[split_idx:]
+    df = df.sort_values(["hour", "stime"])
+
+    unique_hours = sorted(df["hour"].unique())
+
+    if len(unique_hours) > 1:
+        train_hours = unique_hours[:-1]
+        test_hour = unique_hours[-1]
+
+        train_df = df[df["hour"].isin(train_hours)]
+        test_df = df[df["hour"] == test_hour]
+
+        print(f"Train hours: {train_hours}")
+        print(f"Test hour: {test_hour}")
+    else:
+        raise ValueError("Not enough hours for split")
 
     X_train = train_df[feature_columns]
     y_train = train_df[LABEL_COLUMN]
@@ -117,6 +158,10 @@ def main() -> None:
         mlflow.set_tag("model_type", "RandomForest")
         mlflow.set_tag("feature_version", "v1")
         mlflow.set_tag("data_partition", partition or "full")
+
+        mlflow.set_tag("split_type", "hour_based")
+        mlflow.log_param("train_hours", str(train_hours))
+        mlflow.log_param("test_hour", str(test_hour))
 
         # dataset info
         mlflow.log_metric("dataset_size", len(df))

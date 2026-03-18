@@ -371,6 +371,37 @@ This ensures the model is trained only on stable, fully written data, avoiding p
 
 ---
 
+## MLflow Tracking
+
+The project uses MLflow for experiment tracking, enabling full visibility into model training, evaluation, and data versioning.
+
+### Key Features
+
+- **Time-based training**
+  - Train on: `date=YYYY-MM-DD/hour=t`
+  - Test on: `date=YYYY-MM-DD/hour=t+1`
+
+- **Logged Parameters**
+  - `n_estimators`, `test_size`, `random_state`
+
+- **Logged Metrics**
+  - Accuracy, Precision, Recall, F1-score
+  - Dataset size, train/test split
+
+- **Tags**
+  - `model_type`: RandomForest  
+  - `feature_version`: v1  
+  - `data_partition`: current training partition  
+  - `evaluation_partition`: next hour  
+
+### MLflow UI
+
+![MLflow Run Overview](docs/images/mlflow_run.png)
+
+![MLflow Metrics](docs/images/mlflow_metrics.png)
+
+---
+
 ## Deployment
 
 The system runs using **Docker Compose** and can be deployed on distributed infrastructure such as Kubernetes or cloud platforms.
