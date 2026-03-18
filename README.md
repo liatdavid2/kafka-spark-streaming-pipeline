@@ -138,7 +138,7 @@ trigger(processingTime = 5 seconds).
 Spark checkpoints store offsets to allow recovery after failures.
 
 ---
-Why This Architecture Scales to Millions of Events per Minute
+## Why This Architecture Scales
 
 **Kafka ingestion layer**
 Kafka can ingest very large streams of events using distributed brokers and topic partitions.
@@ -201,7 +201,9 @@ The system trains a **Random Forest classifier** with balanced class weights to 
 
 1. Load Parquet partitions produced by Spark
 2. Validate required columns
-3. Split the dataset into train and test sets
+3. Split data using time-based partitioning:
+   - Train on past partitions (hour = t)
+   - Test on the next unseen partition (hour = t+1)
 4. Train the Random Forest model
 5. Evaluate predictions
 
@@ -210,19 +212,19 @@ The system trains a **Random Forest classifier** with balanced class weights to 
 ```
 Training on full dataset: /app/output/unsw_stream
 
-Classification report:
-              precision    recall  f1-score   support
-
-           0       1.00      1.00      1.00     10795
-           1       0.99      0.99      0.99       845
-
-    accuracy                           1.00     11640
-   macro avg       0.99      0.99      0.99     11640
-weighted avg       1.00      1.00      1.00     11640
-
-Confusion matrix:
-[[10786     9]
- [    8   837]]
+training  | Classification report:
+training  |               precision    recall  f1-score   support
+training  |
+training  |            0       1.00      0.97      0.98     24755
+training  |            1       0.73      0.99      0.84      2045
+training  |
+training  |     accuracy                           0.97     26800
+training  |    macro avg       0.86      0.98      0.91     26800
+training  | weighted avg       0.98      0.97      0.97     26800
+training  |
+training  | Confusion matrix:
+training  | [[24011   744]
+training  |  [   24  2021]]
 
 Saved model to:
 /app/models/2026-03-16-15-02-50/intrusion_model.joblib
@@ -286,17 +288,19 @@ cp -r /app/output/unsw_stream/date=2026-03-19 /app/output/unsw_stream/date=2026-
 ```text
 Training on partition: /app/output/unsw_stream/date=2026-03-20/hour=13
 
-Classification report:
-              precision    recall  f1-score   support
-
-           0       1.00      1.00      1.00       447
-           1       1.00      1.00      1.00        13
-
-    accuracy                           1.00       460
-
-Confusion matrix:
-[[447   0]
- [  0  13]]
+training  | Classification report:
+training  |               precision    recall  f1-score   support
+training  |
+training  |            0       1.00      0.97      0.98     24755
+training  |            1       0.73      0.99      0.84      2045
+training  |
+training  |     accuracy                           0.97     26800
+training  |    macro avg       0.86      0.98      0.91     26800
+training  | weighted avg       0.98      0.97      0.97     26800
+training  |
+training  | Confusion matrix:
+training  | [[24011   744]
+training  |  [   24  2021]]
 
 Saved model to: /app/models/2026-03-17-14-16-22/intrusion_model.joblib
 ```
@@ -445,12 +449,6 @@ The system runs using **Docker Compose** and can be deployed on distributed infr
 
 ---
 
-## Monitoring
-
-Streaming performance can be monitored through the **Spark UI**, which exposes metrics such as batch duration, input rows, and processing latency.
-
----
-
 ## Fault Tolerance
 
 Spark **checkpointing** stores Kafka offsets and streaming state, allowing the pipeline to resume processing after failures without data loss.
@@ -462,7 +460,15 @@ Spark **checkpointing** stores Kafka offsets and streaming state, allowing the p
 Backpressure is controlled using `maxOffsetsPerTrigger`, which limits how many events Spark consumes per micro-batch and prevents overload during traffic spikes.
 
 ---
+## Key Capabilities
 
+- Real-time ingestion using Kafka
+- Stream processing with Spark Structured Streaming
+- Partitioned Parquet data lake (date/hour)
+- Automatic retraining on new data partitions
+- Time-based model evaluation to prevent data leakage
+- MLflow experiment tracking and model versioning
+---
 ## Quick Start
 
 ### Clean Environment and Rebuild
