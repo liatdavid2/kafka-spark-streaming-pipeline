@@ -426,6 +426,50 @@ The MLflow experiment below shows multiple training runs before and after fixing
 - The evaluation now reflects real-world streaming conditions
 ---
 
+## Monitoring Metrics
+
+- **Accuracy / F1**
+  - Accuracy: ~0.97  
+  - Error rate: ~2.8%  
+  → Strong performance with realistic errors (no data leakage)
+
+- **Inference Latency**
+  - ~0.2 sec per batch  
+  → Reasonable for offline batch inference
+
+- **Prediction Distribution**
+  - pred_class_0 = 24035  
+  - pred_class_1 = 2765  
+  → Class imbalance exists (as expected in real-world data), but the model correctly predicts both classes
+
+- **Data Drift**
+  - drift_sbytes ≈ 2.9K  
+  - drift_dbytes ≈ 21K  
+  - drift_sload ≈ 6.6M  
+  - drift_stcpb ≈ 147M  
+
+  → Significant differences between train and test data  
+  → The test distribution is not identical to training  
+
+  **Interpretation:**
+  - ✔ Realistic: reflects changing conditions in streaming environments  
+  - ❗ Challenging: makes the prediction task harder
+
+All metrics are logged to MLflow under **offline monitoring mode**.
+
+## MLflow Monitoring Dashboard
+
+### Model Metrics Overview
+
+![MLflow Metrics](docs/images/mlflow_monitoring_metrics.png)
+
+### Full Metrics Table
+
+![MLflow Full Metrics](docs/images/mlflow_monitoring_full_metrics.png)
+
+
+---
+
 ## Handling Large-Scale Data
 
 Using all historical data for training is often not feasible due to memory, latency, and compute constraints.

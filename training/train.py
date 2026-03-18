@@ -1,6 +1,8 @@
 import json
 from pathlib import Path
 import os
+import time
+import numpy as np
 
 import joblib
 import pandas as pd
@@ -160,19 +162,49 @@ def main() -> None:
         mlflow.set_tag("data_partition", partition or "full")
 
         mlflow.set_tag("split_type", "hour_based")
+        mlflow.set_tag("monitoring_mode", "offline")
         mlflow.log_param("train_hours", str(train_hours))
         mlflow.log_param("test_hour", str(test_hour))
 
         # dataset info
-        mlflow.log_metric("dataset_size", len(df))
-        mlflow.log_metric("train_size", len(X_train))
-        mlflow.log_metric("test_size", len(X_test))
+        #mlflow.log_metric("dataset_size", len(df))
+        #mlflow.log_metric("train_size", len(X_train))
+        #mlflow.log_metric("test_size", len(X_test))
 
         # train model
         model = train_model(X_train, y_train)
 
         y_pred = model.predict(X_test)
         metrics = evaluate_model(y_test, y_pred)
+
+        # -------------------------
+        # Latency
+        # -------------------------
+        start = time.time()
+        _ = model.predict(X_test)
+        latency = time.time() - start
+        mlflow.log_metric("inference_latency_sec", latency)
+
+        # -------------------------
+        # Error rate
+        # -------------------------
+        error_rate = (y_pred != y_test).mean()
+        mlflow.log_metric("error_rate", error_rate)
+
+        # -------------------------
+        # Prediction distribution
+        # -------------------------
+        unique, counts = np.unique(y_pred, return_counts=True)
+        for k, v in zip(unique, counts):
+            mlflow.log_metric(f"pred_class_{k}", int(v))
+
+        # -------------------------
+        # Data drift (simple)
+        # -------------------------
+        for col in feature_columns:
+            drift = abs(X_train[col].mean() - X_test[col].mean())
+            mlflow.log_metric(f"drift_{col}", drift)
+            
         metrics["partition"] = partition
 
         # metrics
