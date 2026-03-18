@@ -401,6 +401,24 @@ The project uses MLflow for experiment tracking, enabling full visibility into m
 ![MLflow Metrics](docs/images/mlflow_metrics.png)
 
 ---
+### Data Leakage Prevention
+
+During development, a potential data leakage issue was identified when using random train/test splits on time-based data.
+
+To address this, the evaluation strategy was redesigned to simulate real-world conditions:
+
+- Training is performed on a specific time partition:
+  - `date=YYYY-MM-DD/hour=t`
+- Testing is performed on the **next chronological partition**:
+  - `date=YYYY-MM-DD/hour=t+1`
+
+This ensures:
+- No overlap between training and test data
+- No leakage of future information into the model
+- More realistic evaluation aligned with streaming and production systems
+
+This change significantly improves the reliability of model performance metrics and better reflects real-world deployment scenarios.
+---
 
 ## Deployment
 
