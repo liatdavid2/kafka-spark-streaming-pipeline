@@ -25,7 +25,7 @@ Processed events stored as **partitioned Parquet files** by date and hour for sc
 # Architecture
 
 ```
-           +----------------------+
+            +----------------------+
            |   UNSW-NB15 Dataset  |
            |  Network Flow Events |
            +----------+-----------+
@@ -72,13 +72,26 @@ Processed events stored as **partitioned Parquet files** by date and hour for sc
            | Random Forest Model  |
            +----------+-----------+
                       |
-                      v
+          +-----------+------------+
+          |                        |
+          v                        v
++----------------------+   +----------------------+
+|        MLflow        |   |     Monitoring       |
+|  Experiment Tracking |   | Metrics & Drift      |
+|                      |   |                      |
+| Params / Metrics     |   | Accuracy / F1        |
+| Model Versions       |   | Latency              |
+| Data Partitions      |   | Prediction Dist      |
++----------+-----------+   | Data Drift           |
+           |               +----------+-----------+
+           |                          |
+           +------------+-------------+
+                        v
            +----------------------+
            |   Versioned Models   |
            |  Model Artifacts     |
-           |  metrics / features  |
+           | metrics / features   |
            +----------------------+
-
 ```
 ---
 ## Data Lake Structure
