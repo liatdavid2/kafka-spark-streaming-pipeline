@@ -1,6 +1,10 @@
-# Kafka–Spark Streaming Pipeline
+# Real-Time Intrusion Detection Pipeline (Kafka, Spark, MLflow + Model Registry, Auto-Retraining)
 
-A real-time cybersecurity data pipeline built with Kafka and Spark that processes network events, stores partitioned data, and automatically retrains an intrusion detection model based on new incoming data.
+A production-style real-time ML pipeline for intrusion detection built with Kafka and Spark Structured Streaming. 
+
+The system ingests network events, processes them into partitioned data for scalable analytics, and automatically retrains models on new incoming data. 
+
+Integrated with MLflow for experiment tracking, monitoring, and model versioning, including a Model Registry with automated promotion based on performance.
 
 ## Problem
 
