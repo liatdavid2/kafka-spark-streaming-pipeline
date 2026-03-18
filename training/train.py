@@ -4,6 +4,9 @@ import os
 
 import joblib
 import pandas as pd
+import mlflow
+import mlflow.sklearn
+
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 
@@ -22,7 +25,6 @@ from utils import make_model_version_path
 
 
 def load_data() -> pd.DataFrame:
-
     partition = os.getenv("TRAIN_PARTITION")
 
     if partition:
@@ -33,7 +35,6 @@ def load_data() -> pd.DataFrame:
         print(f"Training on full dataset: {data_path}")
 
     df = pd.read_parquet(data_path)
-
     return df
 
 
@@ -68,7 +69,10 @@ def save_artifacts(model, metrics: dict, feature_columns: list[str], output_path
 
 
 def main() -> None:
+    mlflow.set_tracking_uri("http://mlflow:5000")
+    mlflow.set_experiment("intrusion-detection")
     partition = os.getenv("TRAIN_PARTITION")
+
     df = load_data()
     validate_columns(df)
 
@@ -85,23 +89,72 @@ def main() -> None:
         "mean_size_total",
     ]
 
-    X = df[feature_columns]
-    y = df[LABEL_COLUMN]
+    #  sort by time 
+    df = df.sort_values("stime") 
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        X,
-        y,
-        test_size=TEST_SIZE,
-        random_state=RANDOM_STATE,
-        stratify=y
-    )
+    #  split by time 
+    split_idx = int(len(df) * (1 - TEST_SIZE))
 
-    model = train_model(X_train, y_train)
+    train_df = df.iloc[:split_idx]
+    test_df = df.iloc[split_idx:]
 
-    y_pred = model.predict(X_test)
-    metrics = evaluate_model(y_test, y_pred)
-    metrics["partition"] = partition
+    X_train = train_df[feature_columns]
+    y_train = train_df[LABEL_COLUMN]
 
+    X_test = test_df[feature_columns]
+    y_test = test_df[LABEL_COLUMN]
+
+    # MLflow tracking
+    with mlflow.start_run():
+
+        # params
+        mlflow.log_param("model_type", "RandomForest")
+        mlflow.log_param("n_estimators", N_ESTIMATORS)
+        mlflow.log_param("test_size", TEST_SIZE)
+        mlflow.log_param("partition", partition)
+
+        # tags (metadata)
+        mlflow.set_tag("model_type", "RandomForest")
+        mlflow.set_tag("feature_version", "v1")
+        mlflow.set_tag("data_partition", partition or "full")
+
+        # dataset info
+        mlflow.log_metric("dataset_size", len(df))
+        mlflow.log_metric("train_size", len(X_train))
+        mlflow.log_metric("test_size", len(X_test))
+
+        # train model
+        model = train_model(X_train, y_train)
+
+        y_pred = model.predict(X_test)
+        metrics = evaluate_model(y_test, y_pred)
+        metrics["partition"] = partition
+
+        # metrics
+        for k, v in metrics.items():
+            if isinstance(v, (int, float)):
+                mlflow.log_metric(k, v)
+
+        # save model locally
+        model_path = "model.joblib"
+        joblib.dump(model, model_path)
+
+        # log model as artifact
+        mlflow.log_artifact(model_path)
+
+        # save + log metrics file
+        metrics_path = "metrics.json"
+        with open(metrics_path, "w") as f:
+            json.dump(metrics, f, indent=2)
+        mlflow.log_artifact(metrics_path)
+
+        # save + log features
+        features_path = "features.json"
+        with open(features_path, "w") as f:
+            json.dump(feature_columns, f, indent=2)
+        mlflow.log_artifact(features_path)
+
+    # keep local versioning (important)
     output_path = make_model_version_path(MODELS_DIR)
     save_artifacts(model, metrics, feature_columns, output_path)
 
