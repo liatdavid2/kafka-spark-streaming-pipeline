@@ -495,6 +495,49 @@ All metrics are logged to MLflow under **offline monitoring mode**.
 
 ![MLflow Full Metrics](docs/images/mlflow_monitoring_full_metrics.png)
 
+---
+## MLflow Model Registry
+
+Models are registered and versioned in MLflow under `intrusion_model` (similar to Git for models).
+
+### Implementation
+
+* Each training run logs the model:
+
+```python
+mlflow.sklearn.log_model(
+    sk_model=model,
+    artifact_path="model",
+    registered_model_name="intrusion_model"
+)
+```
+
+* A new version is automatically created in the registry
+
+* Model promotion is handled programmatically:
+
+```python
+client = MlflowClient()
+
+latest = client.get_latest_versions("intrusion_model", stages=["None"])[0]
+
+client.transition_model_version_stage(
+    name="intrusion_model",
+    version=latest.version,
+    stage="Staging"
+)
+
+if f1_score > 0.90:
+    client.transition_model_version_stage(
+        name="intrusion_model",
+        version=latest.version,
+        stage="Production"
+    )
+```
+
+### Result
+
+![MLflow Model Registry](docs/images/mlflow_registry.png)
 
 ---
 
