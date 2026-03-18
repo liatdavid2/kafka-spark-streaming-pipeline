@@ -6,7 +6,7 @@ A real-time cybersecurity data pipeline built with Kafka and Spark that processe
 
 Modern security systems generate massive volumes of network events that must be processed reliably in real time for monitoring, analytics, and machine learning.
 
-This architecture is designed to scale horizontally and can support **millions of events per minute** using Kafka ingestion and distributed Spark streaming.
+This architecture is designed for horizontal scalability using Kafka ingestion, Spark streaming, and partitioned storage.
 
 ## Dataset
 
