@@ -396,28 +396,30 @@ The project uses MLflow for experiment tracking, enabling full visibility into m
 
 ### MLflow UI
 
-![MLflow Run Overview](docs/images/mlflow_run.png)
-
 ![MLflow Metrics](docs/images/mlflow_metrics.png)
 
 ---
-### Data Leakage Prevention
+### Data Leakage Fix – MLflow Runs Comparison
 
-During development, a potential data leakage issue was identified when using random train/test splits on time-based data.
+The MLflow experiment below shows multiple training runs before and after fixing a data leakage issue.
 
-To address this, the evaluation strategy was redesigned to simulate real-world conditions:
+![MLflow Runs Comparison](docs/images/mlflow_comparison.png)
 
-- Training is performed on a specific time partition:
-  - `date=YYYY-MM-DD/hour=t`
-- Testing is performed on the **next chronological partition**:
-  - `date=YYYY-MM-DD/hour=t+1`
+#### Key Observations
 
-This ensures:
-- No overlap between training and test data
-- No leakage of future information into the model
-- More realistic evaluation aligned with streaming and production systems
+- Early runs achieved perfect scores (accuracy and F1 = 1.00), indicating potential data leakage
+- These runs were based on random train/test splits on time-based data
 
-This change significantly improves the reliability of model performance metrics and better reflects real-world deployment scenarios.
+#### Fix Applied
+
+- Switched to time-based evaluation:
+  - Train: `hour = t`
+  - Test: `hour = t+1`
+
+#### Result
+
+- Performance dropped to realistic levels (~0.97 accuracy)
+- The evaluation now reflects real-world streaming conditions
 ---
 
 ## Deployment
