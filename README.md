@@ -422,6 +422,23 @@ The MLflow experiment below shows multiple training runs before and after fixing
 - The evaluation now reflects real-world streaming conditions
 ---
 
+## Handling Large-Scale Data
+
+Using all historical data for training is often not feasible due to memory, latency, and compute constraints.
+
+This project applies a **time-aware training strategy**:
+
+- Training is performed on recent data partitions (by hour)
+- Evaluation is done on the next unseen time window
+- Data is incrementally accumulated and retrained periodically
+
+This approach:
+- Reflects real-world streaming conditions
+- Handles concept drift
+- Keeps training efficient and scalable
+
+---
+
 ## Deployment
 
 The system runs using **Docker Compose** and can be deployed on distributed infrastructure such as Kubernetes or cloud platforms.
