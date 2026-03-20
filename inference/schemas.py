@@ -1,0 +1,43 @@
+from pydantic import BaseModel
+
+class FlowInput(BaseModel):
+    dur: float
+    sbytes: float
+    dbytes: float
+    sttl: int
+    dttl: int
+    sloss: int
+    dloss: int
+    sload: float
+    dload: float
+    spkts: int
+    dpkts: int
+    swin: int
+    dwin: int
+    stcpb: int
+    dtcpb: int
+    smeansz: int
+    dmeansz: int
+    trans_depth: int
+    res_bdy_len: int
+    sjit: float
+    djit: float
+    stime: int
+    ltime: int
+    sintpkt: float
+    dintpkt: float
+    tcprtt: float
+    synack: float
+    ackdat: float
+    is_sm_ips_ports: int
+    ct_state_ttl: int
+    ct_flw_http_mthd: int
+    is_ftp_login: int
+    ct_ftp_cmd: int
+    ct_srv_src: int
+    ct_srv_dst: int
+    ct_dst_ltm: int
+    ct_src_ltm: int
+    ct_src_dport_ltm: int
+    ct_dst_sport_ltm: int
+    ct_dst_src_ltm: int
