@@ -526,6 +526,71 @@ This approach ensures that the model aligns with real-world security requirement
 
 ---
 
+# Inference API
+
+FastAPI service for real-time intrusion detection using a model from **MLflow (Production stage)**.
+
+---
+
+## Endpoint
+
+`POST /predict`
+
+---
+
+## Example: Normal
+
+```json
+{
+  "sttl": 31,
+  "dttl": 29,
+  "ct_state_ttl": 0,
+  "dload": 400000,
+  "dmeansz": 80
+}
+```
+
+Response:
+
+```json
+{
+  "prediction": 0,
+  "decision": "ALLOW"
+}
+```
+
+---
+
+## Example: Attack
+
+```json
+{
+  "sttl": 254,
+  "dttl": 252,
+  "ct_state_ttl": 1,
+  "tcprtt": 0.07,
+  "synack": 0.05
+}
+```
+
+Response:
+
+```json
+{
+  "prediction": 1,
+  "decision": "BLOCK"
+}
+```
+
+---
+
+## Notes
+
+* Model is loaded dynamically from MLflow
+* Uses calibrated probabilities + learned threshold
+* Supports partial inputs (missing fields are filled automatically)
+---
+
 ## Handling Large-Scale Data
 
 Using all historical data for training is often not feasible due to memory, latency, and compute constraints.
