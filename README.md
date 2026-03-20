@@ -73,7 +73,7 @@ Processed events stored as **partitioned Parquet files** by date and hour for sc
                       v
            +----------------------+
            |   Model Training     |
-           | Random Forest Model  |
+           | XGBoost Model        |
            +----------+-----------+
                       |
           +-----------+------------+
@@ -227,7 +227,7 @@ date=2026-03-16/hour=14
 
 ### Model
 
-The system trains a **Random Forest classifier** with balanced class weights to handle the class imbalance typical in intrusion detection datasets.
+The system trains a **XGBoost classifier** with balanced class weights to handle the class imbalance typical in intrusion detection datasets.
 
 ### Training Process
 
@@ -236,7 +236,7 @@ The system trains a **Random Forest classifier** with balanced class weights to 
 3. Split data using time-based partitioning:
    - Train on past partitions (hour = t)
    - Test on the next unseen partition (hour = t+1)
-4. Train the Random Forest model
+4. Train the XGBoost model
 5. Evaluate predictions
 
 ### Example Training Output
@@ -363,27 +363,6 @@ cp -r /app/output/unsw_stream/date=2026-03-19 /app/output/unsw_stream/date=2026-
 
 #### 3. Automatic retraining is triggered
 
-```text
-Training on partition: /app/output/unsw_stream/date=2026-03-20/hour=13
-
-training  | Classification report:
-training  |               precision    recall  f1-score   support
-training  |
-training  |            0       1.00      0.97      0.98     24755
-training  |            1       0.73      0.99      0.84      2045
-training  |
-training  |     accuracy                           0.97     26800
-training  |    macro avg       0.86      0.98      0.91     26800
-training  | weighted avg       0.98      0.97      0.97     26800
-training  |
-training  | Confusion matrix:
-training  | [[24011   744]
-training  |  [   24  2021]]
-
-Saved model to: /app/models/2026-03-17-14-16-22/intrusion_model.joblib
-```
----
-
 ## Retraining Flow
 
 The automatic retraining mechanism is implemented via a lightweight watcher service.
@@ -457,24 +436,6 @@ This ensures the model is trained only on stable, fully written data, avoiding p
 
 The project uses MLflow for experiment tracking, enabling full visibility into model training, evaluation, and data versioning.
 
-### Key Features
-
-- **Time-based training**
-  - Train on: `date=YYYY-MM-DD/hour=t`
-  - Test on: `date=YYYY-MM-DD/hour=t+1`
-
-- **Logged Parameters**
-  - `n_estimators`, `test_size`, `random_state`
-
-- **Logged Metrics**
-  - Accuracy, Precision, Recall, F1-score
-  - Dataset size, train/test split
-
-- **Tags**
-  - `model_type`: RandomForest  
-  - `feature_version`: v1  
-  - `data_partition`: current training partition  
-  - `evaluation_partition`: next hour  
 
 ### MLflow UI
 
