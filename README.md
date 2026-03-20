@@ -1,5 +1,11 @@
 # Real-Time Intrusion Detection Pipeline (Kafka, Spark, MLflow + Model Registry, Auto-Retraining)
 
+## MLflow Retraining Demo Video
+
+[![Watch the demo](docs/images/demo_thumbnail.png)](https://youtu.be/H85fJlSiw10)
+
+A production-style real-time ML pipeline.
+
 A production-style real-time ML pipeline for intrusion detection built with Kafka and Spark Structured Streaming. 
 
 The system ingests network events, processes them into partitioned data for scalable analytics, and automatically retrains models on new incoming data. 
