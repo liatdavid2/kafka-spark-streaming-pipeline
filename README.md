@@ -4,7 +4,7 @@
 
 ▶ Watch the video (click the image below)
 
-[![Watch the video](https://img.youtube.com/vi/H85fJlSiw10/maxresdefault.jpg)](https://youtu.be/H85fJlSiw10)
+[![Watch the demo video](docs/images/demo_thumbnail.png)](https://youtu.be/H85fJlSiw10)
 
 A production-style real-time ML pipeline for intrusion detection built with Kafka and Spark Structured Streaming. 
 
