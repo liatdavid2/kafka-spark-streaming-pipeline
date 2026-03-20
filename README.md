@@ -35,7 +35,7 @@ Processed events stored as **partitioned Parquet files** by date and hour for sc
 # Architecture
 
 ```
-            +----------------------+
+           +----------------------+
            |   UNSW-NB15 Dataset  |
            |  Network Flow Events |
            +----------+-----------+
@@ -79,7 +79,8 @@ Processed events stored as **partitioned Parquet files** by date and hour for sc
                       v
            +----------------------+
            |   Model Training     |
-           | XGBoost Model        |
+           |     XGBoost Model    |
+           | + Threshold Tuning   |
            +----------+-----------+
                       |
           +-----------+------------+
@@ -90,18 +91,24 @@ Processed events stored as **partitioned Parquet files** by date and hour for sc
 |  Experiment Tracking |   | Metrics & Drift      |
 |                      |   |                      |
 | Params / Metrics     |   | Accuracy / F1        |
-| Model Versions       |   | Latency              |
-| Data Partitions      |   | Prediction Dist      |
-+----------+-----------+   | Data Drift           |
-           |               +----------+-----------+
-           |                          |
-           +------------+-------------+
-                        v
-           +----------------------+
-           |   Versioned Models   |
-           |  Model Artifacts     |
-           | metrics / features   |
-           +----------------------+
+| Threshold / PR Curve |   | Latency              |
+| Model Versions       |   | Prediction Dist      |
+| Data Partitions      |   | Data Drift           |
++----------+-----------+   +----------+-----------+
+           |
+           v
++----------------------+
+|  Model Registry      |
+|  Staging → Production|
+|  Auto Promotion      |
++----------+-----------+
+           |
+           v
++----------------------+
+|   Versioned Models   |
+|  Model Artifacts     |
+| metrics / features   |
++----------------------+
 ```
 ---
 
