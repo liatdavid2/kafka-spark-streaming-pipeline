@@ -1,5 +1,10 @@
-fastapi
-uvicorn
-pydantic
-pandas
-mlflow
+mlflow==2.12.1
+numpy==1.26.4
+pandas==2.2.2
+scikit-learn==1.4.2
+xgboost==2.0.3
+packaging==24.2
+
+fastapi==0.110.0
+uvicorn==0.29.0
+pydantic==2.7.1

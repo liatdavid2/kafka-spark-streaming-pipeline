@@ -7,6 +7,7 @@ services:
     volumes:
       - ../output:/app/output
       - ../models:/app/models
+      - ../mlruns:/mlruns
     depends_on:
       - spark
 
@@ -87,5 +88,6 @@ services:
       - "8000:8000"
     volumes:
       - ../models:/app/models
+      - ../mlruns:/mlruns 
     environment:
       - MLFLOW_TRACKING_URI=http://mlflow:5000
