@@ -441,28 +441,14 @@ The project uses MLflow for experiment tracking, enabling full visibility into m
 
 ![MLflow Metrics](docs/images/mlflow_metrics.png)
 
----
-### Data Leakage Fix – MLflow Runs Comparison
+### MLflow Experiments Overview
 
-The MLflow experiment below shows multiple training runs before and after fixing a data leakage issue.
+![MLflow Experiments](docs/images/mlflow_experiments.png)
 
-![MLflow Runs Comparison](docs/images/mlflow_comparison.png)
+The MLflow dashboard provides a comparison of multiple training runs, including accuracy and F1-score across different model versions.
 
-#### Key Observations
+Consistent performance (~0.97 accuracy and F1) across runs indicates stable training behavior after fixing data leakage and applying time-based evaluation.
 
-- Early runs achieved perfect scores (accuracy and F1 = 1.00), indicating potential data leakage
-- These runs were based on random train/test splits on time-based data
-
-#### Fix Applied
-
-- Switched to time-based evaluation:
-  - Train: `hour = t`
-  - Test: `hour = t+1`
-
-#### Result
-
-- Performance dropped to realistic levels (~0.97 accuracy)
-- The evaluation now reflects real-world streaming conditions
 ---
 
 ## Monitoring Metrics
@@ -475,11 +461,6 @@ The MLflow experiment below shows multiple training runs before and after fixing
 - **Inference Latency**
   - ~0.2 sec per batch  
   → Reasonable for offline batch inference
-
-- **Prediction Distribution**
-  - pred_class_0 = 24035  
-  - pred_class_1 = 2765  
-  → Class imbalance exists (as expected in real-world data), but the model correctly predicts both classes
 
 - **Data Drift**
   - drift_sbytes ≈ 2.9K  
