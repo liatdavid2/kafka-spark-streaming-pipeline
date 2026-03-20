@@ -1,22 +1,12 @@
-from pathlib import Path
-import joblib
+import os
+import mlflow.pyfunc
 
-MODELS_DIR = Path("/app/models")
+MODEL_URI = "models:/intrusion_model/Production"
 
 
 def load_model():
-    # find all model files recursively
-    models = list(MODELS_DIR.rglob("*.joblib"))
-
-    if not models:
-        raise FileNotFoundError("No model found in /app/models")
-
-    # pick latest by folder name (timestamp)
-    latest_model = sorted(models)[-1]
-
-    print(f"Loading model: {latest_model}")
-
-    return joblib.load(latest_model)
+    print(f"Loading model from MLflow: {MODEL_URI}")
+    return mlflow.pyfunc.load_model(MODEL_URI)
 
 
 model = load_model()
