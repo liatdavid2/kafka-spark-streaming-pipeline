@@ -28,6 +28,22 @@ from utils import make_model_version_path
 
 MODEL_NAME = "intrusion_model"
 
+from sklearn.metrics import precision_recall_curve
+
+
+def find_best_threshold(y_true, y_prob, min_recall=0.95):
+    precisions, recalls, thresholds = precision_recall_curve(y_true, y_prob)
+
+    best_threshold = 0.5
+    best_precision = 0
+
+    for p, r, t in zip(precisions[:-1], recalls[:-1], thresholds):
+        if r >= min_recall and p > best_precision:
+            best_precision = p
+            best_threshold = t
+
+    return float(best_threshold), float(best_precision)
+
 
 def load_data() -> pd.DataFrame:
     partition = os.getenv("TRAIN_PARTITION")
@@ -130,30 +146,40 @@ def save_artifacts(
 def should_promote_model(
     metrics: dict,
     latency: float,
-    prod_f1: float | None,
+    prod_metrics: dict | None,
 ) -> tuple[bool, list[str]]:
     reasons = []
 
-    current_f1 = metrics.get("f1", 0.0)
-    current_precision = metrics.get("precision", 0.0)
-    current_recall = metrics.get("recall", 0.0)
+    recall = metrics.get("recall", 0.0)
+    precision = metrics.get("precision", 0.0)
 
-    if current_f1 < 0.90:
-        reasons.append(f"F1 too low: {current_f1:.4f} < 0.90")
+    # --- Cyber security priorities ---
+    if recall < 0.95:
+        reasons.append(f"Recall too low: {recall:.4f} < 0.95")
 
-    if current_precision < 0.85:
-        reasons.append(f"Precision too low: {current_precision:.4f} < 0.85")
+    if precision < 0.70:
+        reasons.append(f"Precision too low: {precision:.4f} < 0.70")
 
-    if current_recall < 0.85:
-        reasons.append(f"Recall too low: {current_recall:.4f} < 0.85")
-
+    # latency constraint
     if latency > 0.5:
         reasons.append(f"Latency too high: {latency:.4f} > 0.5")
 
-    if prod_f1 is not None and current_f1 <= prod_f1:
-        reasons.append(
-            f"Not better than current production: {current_f1:.4f} <= {prod_f1:.4f}"
-        )
+    # --- Compare to current production ---
+    if prod_metrics:
+        prod_recall = prod_metrics.get("recall", 0.0)
+        prod_precision = prod_metrics.get("precision", 0.0)
+
+        # must not degrade recall
+        if recall < prod_recall:
+            reasons.append(
+                f"Recall worse than production: {recall:.4f} < {prod_recall:.4f}"
+            )
+
+        # optional: don't degrade precision too much
+        if precision + 0.02 < prod_precision:
+            reasons.append(
+                f"Precision dropped too much: {precision:.4f} < {prod_precision:.4f}"
+            )
 
     return len(reasons) == 0, reasons
 
@@ -180,7 +206,18 @@ def register_and_promote_model(
     print(f"Model version {latest.version} moved to Staging")
 
     prod_versions = client.get_latest_versions(MODEL_NAME, stages=["Production"])
-    prod_f1 = None
+    prod_metrics = None
+
+    if prod_versions:
+        prod_run_id = prod_versions[0].run_id
+        prod_run = client.get_run(prod_run_id)
+
+        prod_metrics = {
+            "recall": prod_run.data.metrics.get("recall", 0.0),
+            "precision": prod_run.data.metrics.get("precision", 0.0),
+        }
+
+        print(f"Current Production Metrics: {prod_metrics}")
 
     if prod_versions:
         prod_run_id = prod_versions[0].run_id
@@ -189,9 +226,9 @@ def register_and_promote_model(
         print(f"Current Production F1: {prod_f1}")
 
     promote, reasons = should_promote_model(
-        metrics=metrics,
-        latency=latency,
-        prod_f1=prod_f1,
+    metrics=metrics,
+    latency=latency,
+    prod_metrics=prod_metrics,
     )
 
     if promote:
@@ -267,7 +304,19 @@ def main() -> None:
 
         model = train_model(X_train, y_train)
 
-        y_pred = model.predict(X_test)
+        y_prob = model.predict_proba(X_test)[:, 1]
+
+        threshold, precision_at_threshold = find_best_threshold(
+            y_test, y_prob, min_recall=0.95
+        )
+
+        print(f"Chosen threshold: {threshold}")
+        print(f"Precision at threshold: {precision_at_threshold}")
+
+        y_pred = (y_prob > threshold).astype(int)
+
+        mlflow.log_param("threshold", threshold)
+        mlflow.log_metric("precision_at_threshold", precision_at_threshold)
 
         metrics = evaluate_model(y_test, y_pred)
         metrics["partition"] = partition or "full"

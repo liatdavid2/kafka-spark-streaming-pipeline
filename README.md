@@ -242,25 +242,71 @@ The system trains a **Random Forest classifier** with balanced class weights to 
 ### Example Training Output
 
 ```
-Training on full dataset: /app/output/unsw_stream
+Training on partition: /app/output/unsw_stream/date=2026-03-21/hour=13
+Loading full date: /app/output/unsw_stream/date=2026-03-21
+Loading /app/output/unsw_stream/date=2026-03-21/hour=13
+Loading /app/output/unsw_stream/date=2026-03-21/hour=14
 
-training  | Classification report:
-training  |               precision    recall  f1-score   support
-training  |
-training  |            0       1.00      0.97      0.98     24755
-training  |            1       0.73      0.99      0.84      2045
-training  |
-training  |     accuracy                           0.97     26800
-training  |    macro avg       0.86      0.98      0.91     26800
-training  | weighted avg       0.98      0.97      0.97     26800
-training  |
-training  | Confusion matrix:
-training  | [[24011   744]
-training  |  [   24  2021]]
+Train hours: [13]
+Test hour: 14
 
-Saved model to:
-/app/models/2026-03-16-15-02-50/intrusion_model.joblib
+Chosen threshold: 0.9958533048629761
+Precision at threshold: 0.7332082551594746
+
+Classification report:
+              precision    recall  f1-score   support
+
+           0       1.00      0.97      0.98     24755
+           1       0.73      0.96      0.83      2045
+
+    accuracy                           0.97     26800
+   macro avg       0.86      0.96      0.91     26800
+weighted avg       0.98      0.97      0.97     26800
+
+Confusion matrix:
+[[24044   711]
+ [   92  1953]]
+
+Model version 8 moved to Staging
+Model version 8 promoted to Production
 ```
+
+---
+
+## Imbalanced Data Handling
+
+The dataset is naturally imbalanced (benign ≫ attack), reflecting real-world network traffic.
+
+Class balancing techniques (such as oversampling or undersampling) were intentionally avoided because they can distort the data distribution and lead to unrealistic model behavior, especially increasing false positives in production.
+
+Instead, imbalance is handled using:
+
+* Threshold optimization
+* Precision-recall tradeoff
+
+This ensures the model remains aligned with real-world conditions.
+
+---
+
+## Threshold Optimization
+
+Instead of using a default classification threshold (0.5), the model selects a threshold based on the precision-recall curve.
+
+Goal:
+
+* Maintain high recall (~0.95) to minimize missed attacks
+* Ensure minimum precision (~0.70) to control false positives
+
+This aligns with cybersecurity requirements where detecting attacks is more critical than avoiding false alarms.
+
+---
+
+### MLflow Model Registry (Staging → Production)
+
+![MLflow Model Registry Staging](docs/images/mlflow_registry_stage.png)
+
+The latest model version is automatically promoted to Production, while previous versions remain in Staging for comparison and rollback.
+---
 
 ### Model Artifacts
 
@@ -542,6 +588,33 @@ if f1_score > 0.90:
 ### Result
 
 ![MLflow Model Registry](docs/images/mlflow_registry.png)
+
+---
+
+## Imbalanced Data Handling & Cyber-Security Metrics
+
+The dataset is highly imbalanced, with significantly more normal traffic than attack samples. This reflects real-world network conditions, where malicious events are rare.
+
+Instead of applying class balancing techniques (e.g., oversampling or undersampling), the model handles imbalance using:
+
+* **Class weighting (`scale_pos_weight`)** during training
+* **Threshold tuning** to control the trade-off between recall and precision
+
+Class balancing was intentionally avoided because it can distort the data distribution and lead to unrealistic performance, especially increasing false positives in production.
+
+### Evaluation Strategy
+
+In cybersecurity, missing an attack (false negative) is far more critical than raising false alerts. Therefore, model evaluation is focused on the **attack class (positive class)** rather than global averages.
+
+The promotion criteria prioritize:
+
+* **High Recall (≥ 0.95)** – to minimize missed attacks
+* **Minimum Precision (≥ 0.70)** – to control alert noise
+* **Latency constraints** – to ensure real-time performance
+
+Metrics such as macro or weighted averages are not used for decision-making, as they can hide poor performance on the minority attack class.
+
+This approach ensures that the model aligns with real-world security requirements rather than optimizing for generic ML metrics.
 
 ---
 
