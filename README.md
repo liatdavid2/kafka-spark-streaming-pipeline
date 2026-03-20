@@ -439,8 +439,6 @@ The project uses MLflow for experiment tracking, enabling full visibility into m
 
 ### MLflow UI
 
-![MLflow Metrics](docs/images/mlflow_metrics.png)
-
 ### MLflow Experiments Overview
 
 ![MLflow Experiments](docs/images/mlflow_experiments.png)
