@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 from mlflow.tracking import MlflowClient
 from xgboost import XGBClassifier
+from sklearn.model_selection import train_test_split
 
 from config import (
     DATA_PATH,
@@ -24,11 +25,12 @@ from config import (
 from evaluate import evaluate_model
 from features import build_features
 from utils import make_model_version_path
-
+from sklearn.calibration import CalibratedClassifierCV
+from sklearn.metrics import precision_recall_curve
 
 MODEL_NAME = "intrusion_model"
 
-from sklearn.metrics import precision_recall_curve
+
 
 
 def find_best_threshold(y_true, y_prob, min_recall=0.95):
@@ -282,8 +284,18 @@ def main() -> None:
     print(f"Train hours: {train_hours}")
     print(f"Test hour: {test_hour}")
 
-    X_train = train_df[feature_columns]
-    y_train = train_df[LABEL_COLUMN]
+
+
+    X_full = train_df[feature_columns]
+    y_full = train_df[LABEL_COLUMN]
+
+    X_train, X_val, y_train, y_val = train_test_split(
+        X_full,
+        y_full,
+        test_size=0.2,
+        random_state=RANDOM_STATE,
+        stratify=y_full
+    )
 
     X_test = test_df[feature_columns]
     y_test = test_df[LABEL_COLUMN]
@@ -302,18 +314,33 @@ def main() -> None:
         mlflow.set_tag("split_type", "hour_based")
         mlflow.set_tag("monitoring_mode", "offline")
 
-        model = train_model(X_train, y_train)
+        
 
-        y_prob = model.predict_proba(X_test)[:, 1]
+        base_model = train_model(X_train, y_train)
 
-        threshold, precision_at_threshold = find_best_threshold(
-            y_test, y_prob, min_recall=0.95
+        model = CalibratedClassifierCV(
+            base_model,
+            method="isotonic", 
+            cv="prefit"
         )
 
+        model.fit(X_val, y_val)
+
+        y_prob = model.predict_proba(X_test)[:, 1]
+        print("Sample probabilities:", y_prob[:10])
+
+        y_val_prob = model.predict_proba(X_val)[:, 1]
+
+        threshold, precision_at_threshold = find_best_threshold(
+            y_val, y_val_prob, min_recall=0.95
+        )
         print(f"Chosen threshold: {threshold}")
         print(f"Precision at threshold: {precision_at_threshold}")
 
         y_pred = (y_prob > threshold).astype(int)
+
+        mlflow.log_param("calibration", "isotonic")
+        mlflow.log_param("calibration_split", 0.2)
 
         mlflow.log_param("threshold", threshold)
         mlflow.log_metric("precision_at_threshold", precision_at_threshold)
@@ -324,7 +351,7 @@ def main() -> None:
         sample = X_test.iloc[: min(100, len(X_test))]
 
         start = time.time()
-        _ = model.predict(sample)
+        _ = model.predict_proba(sample)
         latency = (time.time() - start) / max(len(sample), 1)
         mlflow.log_metric("inference_latency_sec", latency)
 
@@ -336,7 +363,7 @@ def main() -> None:
             mlflow.log_metric(f"pred_class_{int(pred_class)}", int(count))
 
         for col in feature_columns:
-            drift = abs(X_train[col].mean() - X_test[col].mean())
+            drift = abs(X_full[col].mean() - X_test[col].mean())
             mlflow.log_metric(f"drift_{col}", float(drift))
 
         for key, value in metrics.items():
@@ -376,6 +403,11 @@ def main() -> None:
         feature_columns=feature_columns,
         output_path=output_path
     )
+
+    print("=== Proba stats: ===")
+    print("min:", y_prob.min())
+    print("max:", y_prob.max())
+    print("mean:", y_prob.mean())
     print("=== METRICS ===")
     print(metrics)
 
