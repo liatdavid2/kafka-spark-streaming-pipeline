@@ -320,7 +320,7 @@ def main() -> None:
 
         model = CalibratedClassifierCV(
             base_model,
-            method="isotonic", 
+            method="sigmoid", 
             cv="prefit"
         )
 
@@ -332,14 +332,18 @@ def main() -> None:
         y_val_prob = model.predict_proba(X_val)[:, 1]
 
         threshold, precision_at_threshold = find_best_threshold(
-            y_val, y_val_prob, min_recall=0.95
+            y_val,
+            y_val_prob,
+            min_recall=0.90
         )
+
+        threshold = min(threshold, 0.9)
         print(f"Chosen threshold: {threshold}")
         print(f"Precision at threshold: {precision_at_threshold}")
 
         y_pred = (y_prob > threshold).astype(int)
 
-        mlflow.log_param("calibration", "isotonic")
+        mlflow.log_param("calibration", "sigmoid")
         mlflow.log_param("calibration_split", 0.2)
 
         mlflow.log_param("threshold", threshold)
