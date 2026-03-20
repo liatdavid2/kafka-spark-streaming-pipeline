@@ -14,33 +14,36 @@ def root():
 @app.post("/predict")
 def predict(flow: FlowInput):
 
-    model = load_model()
+    # change: load threshold too
+    model, threshold = load_model()
 
     data = flow.model_dump()
     df = build_features_from_json(data)
 
+    # use robust proba extraction
     try:
-        prediction = model.predict(df)[0]
+        proba = extract_proba(model, df)
     except Exception as e:
         return {"error": f"Prediction failed: {str(e)}"}
 
-    # use robust proba extraction
-    proba = extract_proba(model, df)
-
     # fallback (prevents null)
     if proba is None:
-        proba = float(prediction)
+        return {"error": "Model does not support probability prediction"}
+
+    # change: prediction based on threshold (not model.predict)
+    prediction = int(proba > threshold)
 
     decision = "ALLOW"
 
-    if proba > 0.9:
+    # keep your logic but aligned with threshold
+    if proba > threshold:
         decision = "BLOCK"
-    elif proba > 0.6:
+    elif proba > threshold * 0.7:
         decision = "ALERT"
     elif prediction == 1:
         decision = "ALERT"
 
-    print(f"[PREDICT] pred={prediction}, proba={proba}, decision={decision}")
+    print(f"[PREDICT] pred={prediction}, proba={proba}, threshold={threshold}, decision={decision}")
 
     return {
         "prediction": int(prediction),
