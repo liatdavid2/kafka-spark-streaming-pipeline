@@ -2,6 +2,7 @@ import json
 import os
 import time
 from pathlib import Path
+from typing import Any
 
 import joblib
 import mlflow
@@ -9,7 +10,7 @@ import mlflow.sklearn
 import numpy as np
 import pandas as pd
 from mlflow.tracking import MlflowClient
-from sklearn.ensemble import RandomForestClassifier
+from xgboost import XGBClassifier
 
 from config import (
     DATA_PATH,
@@ -39,13 +40,11 @@ def load_data() -> pd.DataFrame:
         if not data_path.exists():
             raise FileNotFoundError(f"Partition path does not exist: {data_path}")
 
-        # If partition is an hour, load all hours from the same date
         if "hour=" in partition:
             date_path = data_path.parent
         else:
             date_path = data_path
     else:
-        # Fallback: load latest available date
         date_dirs = sorted(base_path.glob("date=*"))
         if not date_dirs:
             raise FileNotFoundError(f"No date partitions found under: {base_path}")
@@ -54,7 +53,6 @@ def load_data() -> pd.DataFrame:
     print(f"Loading full date: {date_path}")
 
     dfs = []
-
     for hour_dir in sorted(date_path.glob("hour=*")):
         print(f"Loading {hour_dir}")
 
@@ -82,22 +80,39 @@ def validate_columns(df: pd.DataFrame) -> None:
         raise ValueError(f"Missing required columns: {sorted(missing)}")
 
 
-def train_model(X_train: pd.DataFrame, y_train: pd.Series) -> RandomForestClassifier:
-    model = RandomForestClassifier(
+def train_model(X_train: pd.DataFrame, y_train: pd.Series) -> XGBClassifier:
+    positive_count = int(y_train.sum())
+    negative_count = int(len(y_train) - positive_count)
+
+    if positive_count == 0:
+        raise ValueError("Training labels contain no positive samples.")
+
+    pos_weight = negative_count / positive_count
+
+    model = XGBClassifier(
         n_estimators=N_ESTIMATORS,
+        max_depth=6,
+        learning_rate=0.1,
+        subsample=0.8,
+        colsample_bytree=0.8,
+        scale_pos_weight=pos_weight,
         random_state=RANDOM_STATE,
         n_jobs=-1,
-        class_weight="balanced",
+        eval_metric="logloss",
+        use_label_encoder=False,
+        tree_method="hist"
     )
+
     model.fit(X_train, y_train)
     return model
 
 
+
 def save_artifacts(
-    model: RandomForestClassifier,
+    model: Any,
     metrics: dict,
     feature_columns: list[str],
-    output_path: Path,
+    output_path: Path
 ) -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -136,7 +151,9 @@ def should_promote_model(
         reasons.append(f"Latency too high: {latency:.4f} > 0.5")
 
     if prod_f1 is not None and current_f1 <= prod_f1:
-        reasons.append(f"Not better than current production: {current_f1:.4f} <= {prod_f1:.4f}")
+        reasons.append(
+            f"Not better than current production: {current_f1:.4f} <= {prod_f1:.4f}"
+        )
 
     return len(reasons) == 0, reasons
 
@@ -216,7 +233,6 @@ def main() -> None:
     df = df.sort_values(["hour", "stime"])
 
     unique_hours = sorted(df["hour"].unique())
-
     if len(unique_hours) <= 1:
         raise ValueError("Not enough hours for hour-based split")
 
@@ -236,14 +252,14 @@ def main() -> None:
     y_test = test_df[LABEL_COLUMN]
 
     with mlflow.start_run():
-        mlflow.log_param("model_type", "RandomForest")
+        mlflow.log_param("model_type", "XGBoost")
         mlflow.log_param("n_estimators", N_ESTIMATORS)
         mlflow.log_param("test_size", TEST_SIZE)
-        mlflow.log_param("partition", partition)
+        mlflow.log_param("partition", partition or "full")
         mlflow.log_param("train_hours", str(train_hours))
         mlflow.log_param("test_hour", str(test_hour))
 
-        mlflow.set_tag("model_type", "RandomForest")
+        mlflow.set_tag("model_type", "XGBoost")
         mlflow.set_tag("feature_version", "v1")
         mlflow.set_tag("data_partition", partition or "full")
         mlflow.set_tag("split_type", "hour_based")
@@ -252,12 +268,15 @@ def main() -> None:
         model = train_model(X_train, y_train)
 
         y_pred = model.predict(X_test)
+
         metrics = evaluate_model(y_test, y_pred)
-        metrics["partition"] = partition
+        metrics["partition"] = partition or "full"
+
+        sample = X_test.iloc[: min(100, len(X_test))]
 
         start = time.time()
-        _ = model.predict(X_test)
-        latency = time.time() - start
+        _ = model.predict(sample)
+        latency = (time.time() - start) / max(len(sample), 1)
         mlflow.log_metric("inference_latency_sec", latency)
 
         error_rate = float((y_pred != y_test).mean())
@@ -265,7 +284,7 @@ def main() -> None:
 
         unique_preds, counts = np.unique(y_pred, return_counts=True)
         for pred_class, count in zip(unique_preds, counts):
-            mlflow.log_metric(f"pred_class_{pred_class}", int(count))
+            mlflow.log_metric(f"pred_class_{int(pred_class)}", int(count))
 
         for col in feature_columns:
             drift = abs(X_train[col].mean() - X_test[col].mean())
@@ -284,13 +303,6 @@ def main() -> None:
             registered_model_name=MODEL_NAME,
         )
 
-        client = MlflowClient()
-        register_and_promote_model(
-            client=client,
-            metrics=metrics,
-            latency=latency,
-        )
-
         metrics_path = "metrics.json"
         with open(metrics_path, "w", encoding="utf-8") as f:
             json.dump(metrics, f, indent=2)
@@ -301,8 +313,22 @@ def main() -> None:
             json.dump(feature_columns, f, indent=2)
         mlflow.log_artifact(features_path)
 
+        client = MlflowClient()
+        register_and_promote_model(
+            client=client,
+            metrics=metrics,
+            latency=latency,
+        )
+
     output_path = make_model_version_path(MODELS_DIR)
-    save_artifacts(model, metrics, feature_columns, output_path)
+    save_artifacts(
+        model=model,
+        metrics=metrics,
+        feature_columns=feature_columns,
+        output_path=output_path
+    )
+    print("=== METRICS ===")
+    print(metrics)
 
     print(f"Saved model to: {output_path}")
 
