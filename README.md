@@ -86,6 +86,7 @@ Processed events stored as **partitioned Parquet files** by date and hour for sc
            +----------------------+
            |   Model Training     |
            |     XGBoost Model    |
+           | + Calibration        |
            | + Threshold Tuning   |
            +----------+-----------+
                       |
@@ -114,6 +115,24 @@ Processed events stored as **partitioned Parquet files** by date and hour for sc
 |   Versioned Models   |
 |  Model Artifacts     |
 | metrics / features   |
++----------+-----------+
+           |
+           v
++----------------------+
+|   Inference API      |
+|  FastAPI Service     |
+|                      |
+| Loads model + thresh |
+| Handles JSON input   |
+| Feature processing   |
+| Real-time prediction |
++----------+-----------+
+           |
+           v
++----------------------+
+|   API Response       |
+| prediction / score   |
+| decision (ALLOW/BLOCK)|
 +----------------------+
 ```
 ---
