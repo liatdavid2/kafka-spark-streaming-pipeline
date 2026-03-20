@@ -1,10 +1,16 @@
 # Real-Time Intrusion Detection Pipeline (Kafka, Spark, MLflow + Model Registry, Auto-Retraining)
 
-## MLflow Retraining & Production Promotion Demo
+## Demo - MLflow Retraining & Production Promotion Demo
 
 ▶ Watch the video (click the image below)
 
 [![Watch the demo video](docs/images/demo_thumbnail.png)](https://youtu.be/H85fJlSiw10)
+
+## Demo – Real-Time Intrusion Detection API
+
+▶ Click below to see the system detecting normal vs attack traffic in real time:
+
+[![Watch the demo](docs/images/SwaggerAPI.png)](https://youtu.be/0rco39ZGqtI)
 
 A production-style real-time ML pipeline for intrusion detection built with Kafka and Spark Structured Streaming. 
 
