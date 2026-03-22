@@ -31,7 +31,21 @@ from sklearn.metrics import precision_recall_curve
 MODEL_NAME = "intrusion_model"
 
 
+def save_train_distribution(df, feature_columns, path="train_stats.json"):
+    stats = {}
 
+    for col in feature_columns:
+        values = df[col].dropna().values
+
+        stats[col] = {
+            "mean": float(values.mean()),
+            "sample": values[:1000].tolist()  # מספיק ל-KS + PSI
+        }
+
+    with open(path, "w") as f:
+        json.dump(stats, f, indent=2)
+
+    print(f"Saved train distribution → {path}")
 
 def find_best_threshold(y_true, y_prob, min_recall=0.95):
     precisions, recalls, thresholds = precision_recall_curve(y_true, y_prob)
@@ -388,6 +402,9 @@ def main() -> None:
             json.dump(metrics, f, indent=2)
         mlflow.log_artifact(metrics_path)
 
+        save_train_distribution(X_full, feature_columns)
+        mlflow.log_artifact("train_stats.json")
+
         features_path = "features.json"
         with open(features_path, "w", encoding="utf-8") as f:
             json.dump(feature_columns, f, indent=2)
@@ -407,6 +424,7 @@ def main() -> None:
         feature_columns=feature_columns,
         output_path=output_path
     )
+
 
     print("=== Proba stats: ===")
     print("min:", y_prob.min())
