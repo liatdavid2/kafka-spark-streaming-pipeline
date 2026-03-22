@@ -613,9 +613,54 @@ Response:
   "decision": "BLOCK"
 }
 ```
+---
+
+## Monitoring, Drift Detection & Auto-Rollback
+
+This system includes a **production monitoring layer** that tracks both model performance and data distribution in real time.
+
+### What it does
+
+* Monitors **error rate** from MLflow
+* Detects **data drift** using:
+
+  * Mean difference
+  * KS test
+  * PSI
+* Computes **weighted drift score** using XGBoost feature importance
+
+### Decision Logic
+
+* **Rollback triggered if:**
+
+  * High error rate
+  * OR drift + performance degradation
+
+* **No action if:**
+
+  * Drift exists but model performance is stable
+
+### Auto-Rollback
+
+Automatically switches to the previous stable model via MLflow Model Registry.
+
+```text
+[DRIFT SUMMARY]
+Weighted drift score: 0.60
+
+[DECISION] ISSUE DETECTED
+→ ACTION: ROLLBACK
+```
 
 ---
 
+## Why it matters
+
+* Prevents silent model degradation
+* Handles changing network behavior (e.g. new attacks)
+* Enables **self-healing ML systems**
+
+---
 ## Notes
 
 * Model is loaded dynamically from MLflow
