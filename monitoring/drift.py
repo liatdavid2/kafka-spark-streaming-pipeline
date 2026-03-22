@@ -35,7 +35,12 @@ def mean_drift(train_mean, current_mean, threshold=0.2):
     - diff (absolute difference between means)
     """
     diff = abs(train_mean - current_mean)
-    return diff > threshold, diff
+
+    # normalize (optional but safer)
+    denom = abs(train_mean) + 1e-8
+    relative_diff = diff / denom
+
+    return relative_diff > threshold, relative_diff
 
 
 def ks_drift(train_values, current_values, p_threshold=0.05):
@@ -72,6 +77,9 @@ def ks_drift(train_values, current_values, p_threshold=0.05):
     - drift_flag (True/False)
     - p_value (statistical significance)
     """
+    if len(train_values) < 10 or len(current_values) < 10:
+        return False, 1.0  # not enough data → assume no drift
+
     stat, p_value = ks_2samp(train_values, current_values)
     return p_value < p_threshold, p_value
 
@@ -111,14 +119,22 @@ def population_stability_index(train_values, current_values, bins=10, threshold=
     - drift_flag (True/False)
     - psi value (drift magnitude)
     """
+    if len(train_values) == 0 or len(current_values) == 0:
+        return False, 0.0
+
     train_hist, bin_edges = np.histogram(train_values, bins=bins)
     curr_hist, _ = np.histogram(current_values, bins=bin_edges)
+
+    # avoid division by zero
+    if np.sum(train_hist) == 0 or np.sum(curr_hist) == 0:
+        return False, 0.0
 
     train_perc = train_hist / np.sum(train_hist)
     curr_perc = curr_hist / np.sum(curr_hist)
 
     psi = np.sum(
-        (train_perc - curr_perc) * np.log((train_perc + 1e-8) / (curr_perc + 1e-8))
+        (train_perc - curr_perc) *
+        np.log((train_perc + 1e-8) / (curr_perc + 1e-8))
     )
 
     return psi > threshold, psi

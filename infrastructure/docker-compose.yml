@@ -104,4 +104,5 @@ services:
       - spark
     environment:
       - MLFLOW_TRACKING_URI=http://mlflow:5000
+      - PYTHONUNBUFFERED=1
     restart: always

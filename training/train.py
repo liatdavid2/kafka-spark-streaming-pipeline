@@ -315,6 +315,10 @@ def main() -> None:
     y_test = test_df[LABEL_COLUMN]
 
     with mlflow.start_run():
+
+        # -----------------------------
+        # Params & Tags
+        # -----------------------------
         mlflow.log_param("model_type", "XGBoost")
         mlflow.log_param("n_estimators", N_ESTIMATORS)
         mlflow.log_param("test_size", TEST_SIZE)
@@ -328,22 +332,26 @@ def main() -> None:
         mlflow.set_tag("split_type", "hour_based")
         mlflow.set_tag("monitoring_mode", "offline")
 
-        
-
+        # -----------------------------
+        # Train model
+        # -----------------------------
         base_model = train_model(X_train, y_train)
 
         model = CalibratedClassifierCV(
             base_model,
-            method="sigmoid", 
+            method="sigmoid",
             cv="prefit"
         )
 
         model.fit(X_val, y_val)
 
+        # -----------------------------
+        # Predictions
+        # -----------------------------
         y_prob = model.predict_proba(X_test)[:, 1]
-        print("Sample probabilities:", y_prob[:10])
-
         y_val_prob = model.predict_proba(X_val)[:, 1]
+
+        print("Sample probabilities:", y_prob[:10])
 
         threshold, precision_at_threshold = find_best_threshold(
             y_val,
@@ -352,64 +360,87 @@ def main() -> None:
         )
 
         threshold = min(threshold, 0.9)
+
         print(f"Chosen threshold: {threshold}")
         print(f"Precision at threshold: {precision_at_threshold}")
 
         y_pred = (y_prob > threshold).astype(int)
 
+        # -----------------------------
+        # Log params
+        # -----------------------------
         mlflow.log_param("calibration", "sigmoid")
         mlflow.log_param("calibration_split", 0.2)
-
         mlflow.log_param("threshold", threshold)
+
+        # -----------------------------
+        # Metrics
+        # -----------------------------
         mlflow.log_metric("precision_at_threshold", precision_at_threshold)
 
         metrics = evaluate_model(y_test, y_pred)
         metrics["partition"] = partition or "full"
 
+        # latency
         sample = X_test.iloc[: min(100, len(X_test))]
-
         start = time.time()
         _ = model.predict_proba(sample)
         latency = (time.time() - start) / max(len(sample), 1)
         mlflow.log_metric("inference_latency_sec", latency)
 
+        # error rate
         error_rate = float((y_pred != y_test).mean())
         mlflow.log_metric("error_rate", error_rate)
 
+        # prediction distribution
         unique_preds, counts = np.unique(y_pred, return_counts=True)
         for pred_class, count in zip(unique_preds, counts):
             mlflow.log_metric(f"pred_class_{int(pred_class)}", int(count))
 
+        # drift (basic mean drift for logging)
         for col in feature_columns:
             drift = abs(X_full[col].mean() - X_test[col].mean())
             mlflow.log_metric(f"drift_{col}", float(drift))
 
+        # log evaluation metrics
         for key, value in metrics.items():
             if isinstance(value, (int, float)):
                 mlflow.log_metric(key, value)
 
-        model_path = "model.joblib"
-        joblib.dump(model, model_path)
+        # -----------------------------
+        # Save artifacts
+        # -----------------------------
 
+        # 1. Train distribution (for monitoring)
+        train_stats_path = "/tmp/train_stats.json"
+        save_train_distribution(X_full, feature_columns, train_stats_path)
+        train_stats_path = "/tmp/train_stats.json"
+        mlflow.log_artifact(train_stats_path, artifact_path="drift")
+
+        # 2. Metrics JSON
+        metrics_path = "/tmp/metrics.json"
+        with open(metrics_path, "w", encoding="utf-8") as f:
+            json.dump(metrics, f, indent=2)
+        mlflow.log_artifact(metrics_path)
+
+        # 3. Features JSON
+        features_path = "/tmp/features.json"
+        with open(features_path, "w", encoding="utf-8") as f:
+            json.dump(feature_columns, f, indent=2)
+        mlflow.log_artifact(features_path)
+
+        # -----------------------------
+        # Save & Register model
+        # -----------------------------
         mlflow.sklearn.log_model(
             sk_model=model,
             artifact_path="model",
             registered_model_name=MODEL_NAME,
         )
 
-        metrics_path = "metrics.json"
-        with open(metrics_path, "w", encoding="utf-8") as f:
-            json.dump(metrics, f, indent=2)
-        mlflow.log_artifact(metrics_path)
-
-        save_train_distribution(X_full, feature_columns)
-        mlflow.log_artifact("train_stats.json")
-
-        features_path = "features.json"
-        with open(features_path, "w", encoding="utf-8") as f:
-            json.dump(feature_columns, f, indent=2)
-        mlflow.log_artifact(features_path)
-
+        # -----------------------------
+        # Promote model
+        # -----------------------------
         client = MlflowClient()
         register_and_promote_model(
             client=client,
