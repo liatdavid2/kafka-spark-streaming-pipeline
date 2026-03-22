@@ -27,7 +27,7 @@ DATA_PATH = Path("/app/output")  # parquet from Spark
 def get_train_stats(client):
     try:
         # -----------------------------
-        # Get latest experiment run (NOT model)
+        # Get production model run
         # -----------------------------
         versions = client.get_latest_versions(MODEL_NAME, stages=["Production"])
 
@@ -39,33 +39,20 @@ def get_train_stats(client):
         print(f"[DEBUG] Using production run_id = {run_id}")
 
         # -----------------------------
-        # Find artifact
+        # Direct download (no listing!)
         # -----------------------------
         artifact_path = "drift/train_stats.json"
 
         try:
-            artifacts = client.download_artifacts(run_id, artifact_path)
+            local_path = client.download_artifacts(run_id, artifact_path)
             print(f"[DRIFT] Loaded from {artifact_path}")
         except Exception as e:
             print(f"[DRIFT] train_stats.json not found: {e}")
             return None
-        print("[DEBUG drift files]", [a.path for a in artifacts])
-
-        target = None
-        for a in artifacts:
-            if a.path.endswith("train_stats.json"):
-                target = a.path
-                break
-
-        if not target:
-            print("[DRIFT] train_stats.json not found")
-            return None
 
         # -----------------------------
-        # Download
+        # Load JSON
         # -----------------------------
-        local_path = client.download_artifacts(run_id, target)
-
         with open(local_path, "r") as f:
             stats = json.load(f)
 

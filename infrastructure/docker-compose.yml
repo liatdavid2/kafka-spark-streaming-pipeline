@@ -102,6 +102,7 @@ services:
     container_name: monitoring
     volumes:
       - ../mlruns:/mlruns
+      - ../output:/app/output 
     depends_on:
       - inference
       - kafka
