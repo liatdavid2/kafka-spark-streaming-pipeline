@@ -1,5 +1,26 @@
 # Real-Time Intrusion Detection Pipeline (Kafka, Spark, MLflow + Model Registry, Auto-Retraining)
 
+A production-grade ML system that:
+
+- Detects cyber attacks in real time from streaming network traffic
+- Automatically retrains on new data
+- Monitors model performance and data drift
+- Performs automatic rollback when degradation is detected
+
+This project simulates how modern security systems maintain reliability in dynamic environments.
+
+## Key Highlights
+
+- Real-time ingestion of network events with Kafka
+- Distributed processing with Spark Structured Streaming
+- Time-partitioned Parquet storage for scalable retraining
+- Time-based evaluation to reduce data leakage
+- Threshold optimization with a high-recall cybersecurity focus
+- Automatic retraining when new partitions arrive
+- MLflow tracking and Model Registry promotion flow
+- Monitoring, drift detection, and auto-rollback
+- Real-time inference with FastAPI
+
 ## Demo - MLflow Retraining & Production Promotion Demo
 
 ▶ Watch the video (click the image below)
@@ -18,11 +39,6 @@
 
 [![Watch the demo](docs/images/monitoring_drift.png)](https://youtu.be/X_ocS6ZOEkY)
 
-A production-style real-time ML pipeline for intrusion detection built with Kafka and Spark Structured Streaming. 
-
-The system ingests network events, processes them into partitioned data for scalable analytics, and automatically retrains models on new incoming data. 
-
-Integrated with MLflow for experiment tracking, monitoring, and model versioning, including a Model Registry with automated promotion based on performance.
 
 ## Problem
 
