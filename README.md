@@ -11,13 +11,13 @@ This project simulates how modern security systems maintain reliability in dynam
 
 ## 🎥 System Demo
 
-### ▶ MLflow Retraining & Promotion
+### MLflow Retraining & Promotion
 [![Watch](docs/images/demo_thumbnail.png)](https://youtu.be/H85fJlSiw10)
 
-### ▶  Real-Time Inference API
+### Real-Time Inference API
 [![Watch](docs/images/SwaggerAPI.png)](https://youtu.be/0rco39ZGqtI)
 
-### ▶  Monitoring, Drift & Auto-Rollback
+### Monitoring, Drift & Auto-Rollback
 [![Watch](docs/images/monitoring_drift.png)](https://youtu.be/X_ocS6ZOEkY)
 
 ## Key Highlights
