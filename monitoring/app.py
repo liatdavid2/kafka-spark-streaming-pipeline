@@ -196,21 +196,27 @@ def check_and_rollback():
 
     error_rate = metrics.get("error_rate", 0.0)
 
-    print(f"[MONITOR] error_rate={error_rate}, threshold={ERROR_RATE_THRESHOLD}")
+    print(f"[MONITOR] error_rate={error_rate:.3f} (threshold={ERROR_RATE_THRESHOLD})")
 
     # -------- DRIFT --------
     drift_detected = compute_drift_weighted(client)
 
     # -------- DECISION --------
-    if error_rate > ERROR_RATE_THRESHOLD or drift_detected:
+    rollback = False
+    reason = None
+
+    if error_rate > ERROR_RATE_THRESHOLD:
+        rollback = True
+        reason = "High error rate"
+
+    elif drift_detected and error_rate > 0.02:
+        rollback = True
+        reason = "Drift + performance degradation"
+
+    # -------- ACTION --------
+    if rollback:
         print("\n[DECISION] ISSUE DETECTED")
-
-        if error_rate > ERROR_RATE_THRESHOLD:
-            print("Reason: High error rate")
-
-        if drift_detected:
-            print("Reason: Data drift detected")
-
+        print(f"Reason: {reason}")
         print("→ ACTION: ROLLBACK\n")
         rollback_to_previous(client)
 

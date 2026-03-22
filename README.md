@@ -12,6 +12,12 @@
 
 [![Watch the demo](docs/images/SwaggerAPI.png)](https://youtu.be/0rco39ZGqtI)
 
+## Demo – Monitoring, Drift Detection & Auto-Rollback
+
+▶ Click below to see how the system detects data drift and automatically rolls back the model:
+
+[![Watch the demo](docs/images/monitoring_drift.png)](https://youtu.be/X_ocS6ZOEkY)
+
 A production-style real-time ML pipeline for intrusion detection built with Kafka and Spark Structured Streaming. 
 
 The system ingests network events, processes them into partitioned data for scalable analytics, and automatically retrains models on new incoming data. 
