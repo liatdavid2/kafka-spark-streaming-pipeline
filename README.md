@@ -9,6 +9,17 @@ A production-grade ML system that:
 
 This project simulates how modern security systems maintain reliability in dynamic environments.
 
+## 🎥 System Demo
+
+### ▶ MLflow Retraining & Promotion
+[![Watch](docs/images/demo_thumbnail.png)](https://youtu.be/H85fJlSiw10)
+
+### ▶  Real-Time Inference API
+[![Watch](docs/images/SwaggerAPI.png)](https://youtu.be/0rco39ZGqtI)
+
+### ▶  Monitoring, Drift & Auto-Rollback
+[![Watch](docs/images/monitoring_drift.png)](https://youtu.be/X_ocS6ZOEkY)
+
 ## Key Highlights
 
 - Real-time ingestion of network events with Kafka
@@ -21,24 +32,7 @@ This project simulates how modern security systems maintain reliability in dynam
 - Monitoring, drift detection, and auto-rollback
 - Real-time inference with FastAPI
 
-## Demo - MLflow Retraining & Production Promotion Demo
-
-▶ Watch the video (click the image below)
-
-[![Watch the demo video](docs/images/demo_thumbnail.png)](https://youtu.be/H85fJlSiw10)
-
-## Demo – Real-Time Intrusion Detection API
-
-▶ Click below to see the system detecting normal vs attack traffic in real time:
-
-[![Watch the demo](docs/images/SwaggerAPI.png)](https://youtu.be/0rco39ZGqtI)
-
-## Demo – Monitoring, Drift Detection & Auto-Rollback
-
-▶ Click below to see how the system detects data drift and automatically rolls back the model:
-
-[![Watch the demo](docs/images/monitoring_drift.png)](https://youtu.be/X_ocS6ZOEkY)
-
+---
 
 ## Problem
 
