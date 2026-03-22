@@ -47,78 +47,79 @@ Processed events stored as **partitioned Parquet files** by date and hour for sc
 # Architecture
 
 ```
-           +----------------------+
-           |   UNSW-NB15 Dataset  |
-           |  Network Flow Events |
-           +----------+-----------+
-                      |
-                      v
-           +----------------------+
-           |     Kafka Producer   |
-           |  Streams JSON events |
-           +----------+-----------+
-                      |
-                      v
-           +----------------------+
-           |      Kafka Topic     |
-           |  Distributed Queue   |
-           +----------+-----------+
-                      |
-                      v
-           +----------------------+
-           | Spark Structured     |
-           | Streaming Engine     |
-           |                      |
-           | Micro-batch: 100     |
-           | Trigger: 5 seconds   |
-           | Checkpointing        |
-           +----------+-----------+
-                      |
-                      v
-           +----------------------+
-           | Partitioned Parquet  |
-           |  Data Lake Storage   |
-           | date / hour          |
-           +----------+-----------+
-                      |
-                      v
-           +----------------------+
-           | Retraining Watcher   |
-           | Monitors partitions  |
-           | Detects new data     |
-           +----------+-----------+
-                      |
-                      v
-           +----------------------+
-           |   Model Training     |
-           |     XGBoost Model    |
-           | + Calibration        |
-           | + Threshold Tuning   |
-           +----------+-----------+
-                      |
-          +-----------+------------+
-          |                        |
-          v                        v
+          +----------------------+
+          |   UNSW-NB15 Dataset  |
+          |  Network Flow Events |
+          +----------+-----------+
+                     |
+                     v
+          +----------------------+
+          |     Kafka Producer   |
+          |  Streams JSON events |
+          +----------+-----------+
+                     |
+                     v
+          +----------------------+
+          |      Kafka Topic     |
+          |  Distributed Queue   |
+          +----------+-----------+
+                     |
+                     v
+          +----------------------+
+          | Spark Structured     |
+          | Streaming Engine     |
+          |                      |
+          | Micro-batch: 100     |
+          | Trigger: 5 seconds   |
+          | Checkpointing        |
+          +----------+-----------+
+                     |
+                     v
+          +----------------------+
+          | Partitioned Parquet  |
+          |  Data Lake Storage   |
+          | date / hour          |
+          +----------+-----------+
+                     |
+          +----------+-----------+
+          |                      |
+          v                      v
 +----------------------+   +----------------------+
-|        MLflow        |   |     Monitoring       |
-|  Experiment Tracking |   | Metrics & Drift      |
-|                      |   |                      |
-| Params / Metrics     |   | Accuracy / F1        |
-| Threshold / PR Curve |   | Latency              |
-| Model Versions       |   | Prediction Dist      |
-| Data Partitions      |   | Data Drift           |
-+----------+-----------+   +----------+-----------+
-           |
-           v
-+----------------------+
-|  Model Registry      |
-|  Staging → Production|
-|  Auto Promotion      |
-+----------+-----------+
-           |
-           v
-+----------------------+
-|   Versioned Models   |
+| Retraining Watcher   |   |   Monitoring System  |
+| Monitors partitions  |   |                      |
+| Detects new data     |   | Loads Production     |
+|                      |   | Model Metrics        |
++----------+-----------+   |                      |
+           |               | Computes Drift:      |
+           v               | - Mean               |
++----------------------+   | - KS Test            |
+|   Model Training     |   | - PSI                |
+|     XGBoost Model    |   |                      |
+| + Calibration        |   | Weighted Drift       |
+| + Threshold Tuning   |   | (Feature Importance) |
++----------+-----------+   |                      |
+           |               | Decision Engine:     |
+           v               | - Error Rate         |
++----------------------+   | - Drift Score        |
+|        MLflow        |   |                      |
+|  Experiment Tracking |   | Auto Rollback        |
+|                      |   | (Model Registry)     |
+| Params / Metrics     |   +----------+-----------+
+| Threshold / PR Curve |              |
+| Model Versions       |              |
+| Drift Statistics     |              |
++----------+-----------+              |
+           |                          |
+           v                          v
++----------------------+   +----------------------+
+|  Model Registry      |<--| Rollback Controller  |
+|  Staging → Production|   | Switch to prev model |
+|  Auto Promotion      |   +----------+-----------+
++----------+-----------+              |
+           |                          |
+           v                          |
++----------------------+              |
+|   Versioned Models   |--------------+
 |  Model Artifacts     |
 | metrics / features   |
 +----------+-----------+
