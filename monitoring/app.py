@@ -9,6 +9,8 @@ import numpy as np
 import json
 import pandas as pd
 from pathlib import Path
+import warnings
+warnings.filterwarnings("ignore", category=FutureWarning)
 
 mlflow.set_tracking_uri(
     os.getenv("MLFLOW_TRACKING_URI", "http://mlflow:5000")
@@ -98,22 +100,37 @@ def get_production_metrics(client):
 # -----------------------------
 # Drift computation
 # -----------------------------
-def compute_drift(client):
+def compute_drift_weighted(client):
     train_stats = get_train_stats(client)
 
     if train_stats is None:
-        print("[DRIFT] skipping")
+        print("[DRIFT] skipped (no train stats)")
         return False
 
     current_df = load_current_data()
 
     if current_df is None:
-        print("[DRIFT] No current data → skipping")
+        print("[DRIFT] skipped (no current data)")
         return False
 
-    drift_results = []
+    # -----------------------------
+    # Load feature importance
+    # -----------------------------
+    feature_importance = {}
+    try:
+        versions = client.get_latest_versions(MODEL_NAME, stages=["Production"])
+        run_id = versions[0].run_id
+        run = client.get_run(run_id)
 
-    print("\n[DRIFT CHECK PER FEATURE]")
+        feature_importance = run.data.tags.get("feature_importance")
+        if feature_importance:
+            feature_importance = json.loads(feature_importance)
+        else:
+            feature_importance = {}
+    except Exception:
+        feature_importance = {}
+
+    drift_results = []
 
     for col, train_info in train_stats.items():
         if col not in current_df.columns:
@@ -125,44 +142,43 @@ def compute_drift(client):
         if len(current_values) < 50:
             continue
 
-        # Mean
-        mean_flag, mean_diff = mean_drift(
-            train_info["mean"],
-            np.mean(current_values)
-        )
-
-        # KS
-        ks_flag, p_value = ks_drift(train_values, current_values)
-
-        # PSI
-        psi_flag, psi_value = population_stability_index(
-            train_values,
-            current_values
-        )
-
-        print(f"\nFeature: {col}")
-        print(f"  Mean diff: {mean_diff:.4f} → drift={mean_flag}")
-        print(f"  KS p-value: {p_value:.6f} → drift={ks_flag}")
-        print(f"  PSI: {psi_value:.4f} → drift={psi_flag}")
+        mean_flag, _ = mean_drift(train_info["mean"], np.mean(current_values))
+        ks_flag, _ = ks_drift(train_values, current_values)
+        psi_flag, _ = population_stability_index(train_values, current_values)
 
         votes = sum([mean_flag, ks_flag, psi_flag])
         feature_drift = votes >= 2
 
-        print(f"  → FINAL: drift={feature_drift} ({votes}/3)")
+        importance = feature_importance.get(col, 1.0)
 
-        drift_results.append(feature_drift)
+        drift_results.append((feature_drift, importance))
 
     if not drift_results:
-        print("[DRIFT] No features evaluated")
+        print("[DRIFT] no features evaluated")
         return False
 
-    total_drift = sum(drift_results) > len(drift_results) * 0.3
+    # -----------------------------
+    # Weighted decision
+    # -----------------------------
+    weighted_drift = sum(imp for drift, imp in drift_results if drift)
+    total_importance = sum(imp for _, imp in drift_results)
 
-    print(f"\n[DRIFT SUMMARY] {sum(drift_results)}/{len(drift_results)} features drifted")
-    print(f"[DRIFT FINAL] DRIFT={total_drift}")
+    drift_ratio = weighted_drift / (total_importance + 1e-8)
+
+    total_drift = drift_ratio > 0.4
+
+    # -----------------------------
+    # Clean summary
+    # -----------------------------
+    drifted = sum(1 for d, _ in drift_results if d)
+    total = len(drift_results)
+
+    print("\n[DRIFT SUMMARY]")
+    print(f"Features drifted: {drifted}/{total}")
+    print(f"Weighted drift score: {drift_ratio:.3f}")
+    print(f"Drift detected: {total_drift}")
 
     return total_drift
-
 
 # -----------------------------
 # Main check
@@ -183,7 +199,7 @@ def check_and_rollback():
     print(f"[MONITOR] error_rate={error_rate}, threshold={ERROR_RATE_THRESHOLD}")
 
     # -------- DRIFT --------
-    drift_detected = compute_drift(client)
+    drift_detected = compute_drift_weighted(client)
 
     # -------- DECISION --------
     if error_rate > ERROR_RATE_THRESHOLD or drift_detected:
