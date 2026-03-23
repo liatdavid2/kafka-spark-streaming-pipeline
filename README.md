@@ -570,7 +570,7 @@ This approach ensures that the model aligns with real-world security requirement
 
 # Inference API
 
-FastAPI service for real-time intrusion detection using a model from **MLflow (Production stage)**.
+FastAPI service for real-time network traffic classification using a trained machine learning model automatically loaded from **MLflow Model Registry (Production stage)**.
 
 ### POST `/predict`
 ---
