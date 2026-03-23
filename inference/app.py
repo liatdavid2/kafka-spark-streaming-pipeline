@@ -3,6 +3,7 @@ from schemas import FlowInput
 from features import build_features_from_json
 from model import load_model
 from rules import evaluate_rules
+import pandas as pd
 
 app = FastAPI(title="Intrusion Detection API")
 
@@ -56,6 +57,35 @@ def predict(flow: FlowInput):
 
     df = build_features_from_json(data)
 
+    # -------------------------
+    # FIX 1 — ensure numeric
+    # -------------------------
+    df = df.apply(pd.to_numeric, errors="coerce").fillna(0)
+
+    # -------------------------
+    # FIX 2 — enforce feature order (CRITICAL)
+    # -------------------------
+    if hasattr(model, "feature_names_in_"):
+        df = df.reindex(columns=model.feature_names_in_, fill_value=0)
+
+    # -------------------------
+    # DEBUG
+    # -------------------------
+    print("=== INPUT ===")
+    print(data)
+
+    print("=== FEATURES DEBUG ===")
+    print(df.columns.tolist())
+    print(df.iloc[0].to_dict())
+    print("=== MODEL ===", model)
+    print("=== THRESHOLD ===", threshold)
+
+    probs = model.predict_proba(df)
+    print("=== RAW PROBS ===", probs)
+
+    # -------------------------
+    # PREDICT
+    # -------------------------
     try:
         proba = extract_proba(model, df)
     except Exception as e:

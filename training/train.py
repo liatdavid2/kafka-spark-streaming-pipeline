@@ -39,7 +39,7 @@ def save_train_distribution(df, feature_columns, path="train_stats.json"):
 
         stats[col] = {
             "mean": float(values.mean()),
-            "sample": values[:1000].tolist()  # מספיק ל-KS + PSI
+            "sample": values[:1000].tolist() 
         }
 
     with open(path, "w") as f:
@@ -47,7 +47,7 @@ def save_train_distribution(df, feature_columns, path="train_stats.json"):
 
     print(f"Saved train distribution → {path}")
 
-def find_best_threshold(y_true, y_prob, min_recall=0.95):
+def find_best_threshold(y_true, y_prob, min_recall=0.75):
     precisions, recalls, thresholds = precision_recall_curve(y_true, y_prob)
 
     best_threshold = 0.5
@@ -349,6 +349,10 @@ def main() -> None:
         # Predictions
         # -----------------------------
         y_prob = model.predict_proba(X_test)[:, 1]
+        print("=== PROBA STATS BEFORE THRESHOLD ===")
+        print("min:", y_prob.min())
+        print("max:", y_prob.max())
+        print("mean:", y_prob.mean())
         y_val_prob = model.predict_proba(X_val)[:, 1]
 
         print("Sample probabilities:", y_prob[:10])
@@ -356,10 +360,10 @@ def main() -> None:
         threshold, precision_at_threshold = find_best_threshold(
             y_val,
             y_val_prob,
-            min_recall=0.90
+            min_recall=0.75
         )
+        threshold = max(0.2, min(threshold, 0.6))
 
-        threshold = min(threshold, 0.9)
 
         print(f"Chosen threshold: {threshold}")
         print(f"Precision at threshold: {precision_at_threshold}")

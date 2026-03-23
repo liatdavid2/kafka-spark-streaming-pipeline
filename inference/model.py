@@ -48,6 +48,7 @@ def load_model():
                     # Load threshold from MLflow
                     run = _client.get_run(model_info.run_id)
                     _threshold = float(run.data.params.get("threshold", 0.5))
+                    _threshold = max(0.2, min(_threshold, 0.6))
 
                     print(f"[INFO] Model loaded successfully (version={_current_version})")
                     print(f"[INFO] Threshold loaded: {_threshold}")
