@@ -20,10 +20,11 @@ def predict(flow: FlowInput):
     # Step 1 — run rules first
     rule_result = evaluate_rules(data)
 
-    matched_rules = rule_result["matched_rules"]
-    rule_actions = rule_result["rule_actions"]
-    reasons = rule_result["reasons"]
-    attack_types = rule_result["attack_hypothesis"]
+    matched_rules = rule_result.get("matched_rules", [])
+    rule_actions = rule_result.get("rule_actions", [])
+    reasons = rule_result.get("reasons", [])
+    explanations = rule_result.get("explanations", [])
+    attack_types = rule_result.get("attack_hypothesis", [])
 
     # -------------------------
     # Rule-only decision
@@ -35,7 +36,8 @@ def predict(flow: FlowInput):
             "decision_source": "RULE",
             "matched_rules": matched_rules,
             "attack_hypothesis": attack_types,
-            "reasons": reasons
+            "reasons": reasons,
+            "explanations": explanations
         }
 
     if "ALERT" in rule_actions:
@@ -44,7 +46,8 @@ def predict(flow: FlowInput):
             "decision_source": "RULE",
             "matched_rules": matched_rules,
             "attack_hypothesis": attack_types,
-            "reasons": reasons
+            "reasons": reasons,
+            "explanations": explanations
         }
 
     # -------------------------
