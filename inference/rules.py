@@ -29,7 +29,6 @@ def evaluate_rules(flow):
     attack_types = []
     reasons = []
     actions = []
-    total_score = 0.0
 
     for rule in rules:
         results = []
@@ -48,12 +47,8 @@ def evaluate_rules(flow):
             attack_types.append(rule["name"])
             reasons.append(rule["description"])
             actions.append(rule.get("action", "ALERT"))
-            total_score += rule.get("score", 0.1)
-
-    total_score = min(total_score, 1.0)
 
     return {
-        "rule_score": round(total_score, 4),
         "matched_rules": matched_rules,
         "attack_hypothesis": list(set(attack_types)),
         "reasons": reasons,

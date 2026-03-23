@@ -20,7 +20,6 @@ def predict(flow: FlowInput):
     # Step 1 — run rules first
     rule_result = evaluate_rules(data)
 
-    rule_score = rule_result["rule_score"]
     matched_rules = rule_result["matched_rules"]
     rule_actions = rule_result["rule_actions"]
     reasons = rule_result["reasons"]
@@ -34,17 +33,15 @@ def predict(flow: FlowInput):
         return {
             "decision": "BLOCK",
             "decision_source": "RULE",
-            "rule_score": rule_score,
             "matched_rules": matched_rules,
             "attack_hypothesis": attack_types,
             "reasons": reasons
         }
 
-    if "ALERT" in rule_actions and rule_score >= 0.3:
+    if "ALERT" in rule_actions:
         return {
             "decision": "ALERT",
             "decision_source": "RULE",
-            "rule_score": rule_score,
             "matched_rules": matched_rules,
             "attack_hypothesis": attack_types,
             "reasons": reasons
@@ -82,7 +79,6 @@ def predict(flow: FlowInput):
     return {
         "prediction": int(ml_score > threshold),
         "ml_score": ml_score,
-        "rule_score": rule_score,
         "decision": decision,
         "decision_source": "ML",
         "matched_rules": matched_rules,

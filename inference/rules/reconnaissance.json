@@ -1,0 +1,15 @@
+{
+  "name": "Reconnaissance",
+  "description": "Suspicious scanning behavior indicating reconnaissance activity.",
+  "explanation": "This rule detects reconnaissance activity such as port scanning or probing. It looks for a high number of packets sent, a large number of distinct destination ports, and short intervals between packets. These patterns suggest an attempt to discover open services on the target system.",
+  "severity": "medium",
+  "score": 0.25,
+  "action": "ALERT",
+  "enabled": true,
+  "logic": "AND",
+  "conditions": [
+    { "field": "spkts", "op": ">", "value": 40 },
+    { "field": "dport", "op": ">", "value": 1024 },
+    { "field": "sintpkt", "op": "<", "value": 0.05 }
+  ]
+}
