@@ -34,7 +34,6 @@ def predict(flow: FlowInput):
         return {
             "decision": "BLOCK",
             "decision_source": "RULE",
-            "matched_rules": matched_rules,
             "attack_hypothesis": attack_types,
             "reasons": reasons,
             "explanations": explanations
@@ -44,7 +43,6 @@ def predict(flow: FlowInput):
         return {
             "decision": "ALERT",
             "decision_source": "RULE",
-            "matched_rules": matched_rules,
             "attack_hypothesis": attack_types,
             "reasons": reasons,
             "explanations": explanations
@@ -84,7 +82,6 @@ def predict(flow: FlowInput):
         "ml_score": ml_score,
         "decision": decision,
         "decision_source": "ML",
-        "matched_rules": matched_rules,
         "attack_hypothesis": attack_types,
         "reasons": reasons
     }
