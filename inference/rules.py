@@ -5,10 +5,13 @@ def _num(v):
     try:
         return float(v)
     except:
-        return 0.0
+        return None
 
 
 def check_condition(value, op, target):
+    if value is None:
+        return False
+
     if op == ">":
         return value > target
     if op == "<":
@@ -19,6 +22,7 @@ def check_condition(value, op, target):
         return value <= target
     if op == "==":
         return value == target
+
     return False
 
 
@@ -29,14 +33,16 @@ def evaluate_rules(flow):
     attack_types = []
     reasons = []
     actions = []
-    explanation = []
+    explanations = []
 
     for rule in rules:
         results = []
 
         for cond in rule["conditions"]:
-            value = _num(flow.get(cond["field"]))
-            results.append(check_condition(value, cond["op"], cond["value"]))
+            raw_value = flow.get(cond["field"], None)
+            value = _num(raw_value)
+            result = check_condition(value, cond["op"], cond["value"])
+            results.append(result)
 
         if rule.get("logic", "AND") == "AND":
             triggered = all(results)
@@ -47,13 +53,13 @@ def evaluate_rules(flow):
             matched_rules.append(rule["name"])
             attack_types.append(rule["name"])
             reasons.append(rule["description"])
-            explanation.append(rule["explanation"])
+            explanations.append(rule.get("explanation", ""))
             actions.append(rule.get("action", "ALERT"))
 
     return {
         "matched_rules": matched_rules,
         "attack_hypothesis": list(set(attack_types)),
         "reasons": reasons,
-        "explanations": explanation,
+        "explanations": explanations,
         "rule_actions": actions
     }
