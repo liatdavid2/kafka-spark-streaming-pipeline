@@ -2,7 +2,7 @@
 
 An AI-powered firewall for real-time network traffic classification:
 
-- Inspects network traffic in real time and decides whether to ALLOW, ALERT, or BLOCK
+- Classifies network traffic in real time, deciding whether to ALLOW, ALERT, or BLOCK
 - Detects cyber attacks in real time from streaming network traffic
 - Automatically retrains on new data
 - Monitors model performance and data drift
