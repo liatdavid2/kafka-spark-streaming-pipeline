@@ -5,7 +5,6 @@ from model import load_model
 from rules import evaluate_rules
 import pandas as pd
 import shap
-from explain import build_feature_sentence
 
 explainer = None
 
@@ -149,23 +148,17 @@ def run_inference(data: dict, with_explanation: bool = False):
             # -------------------------
             # Build human explanation
             # -------------------------
-            details = []
+            top_features = []
 
             for f, s, v in feature_importance[:5]:
-                sentence = build_feature_sentence(f, v, s)
-                details.append(sentence)
+                top_features.append({
+                    "feature": str(f),
+                    "value": float(v),
+                    "shap_value": float(s),
+                    "direction": "increase_risk" if s > 0 else "decrease_risk"
+                })
 
-            response["shap_top_features"] = details
-
-            # -------------------------
-            # Add simple explanation
-            # -------------------------
-            if decision == "ALLOW":
-                response["explanation"] = "Traffic looks normal"
-            elif decision == "ALERT":
-                response["explanation"] = "Traffic looks suspicious"
-            else:
-                response["explanation"] = "Potential attack detected"
+            response["shap_top_features"] = top_features
 
         except Exception as e:
             response["explain_error"] = str(e)
