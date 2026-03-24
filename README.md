@@ -13,21 +13,15 @@ This project simulates how modern security systems maintain reliability in dynam
 
 ### Real-Time Inference API
 Real-time AI firewall deciding ALLOW / ALERT / BLOCK using Rules and ML, trained on the UNSW-NB15 dataset.
-<a href="https://youtu.be/0rco39ZGqtI" target="_blank" rel="noopener noreferrer">
-  <img src="docs/images/SwaggerAPI.png" alt="Watch">
-</a>
+[![Watch](docs/images/SwaggerAPI.png)](https://youtu.be/0rco39ZGqtI)
 
 ### MLflow Training & Promotion
 Model retraining and promotion to production based on performance metrics.
-<a href="https://youtu.be/H85fJlSiw10" target="_blank" rel="noopener noreferrer">
-  <img src="docs/images/demo_thumbnail.png" alt="Watch">
-</a>
+[![Watch](docs/images/demo_thumbnail.png)](https://youtu.be/H85fJlSiw10)
 
 ### Monitoring, Drift & Auto-Rollback
 Continuous monitoring with drift detection and automatic rollback on performance degradation.
-<a href="https://youtu.be/X_ocS6ZOEkY" target="_blank" rel="noopener noreferrer">
-  <img src="docs/images/monitoring_drift.png" alt="Watch">
-</a>
+[![Watch](docs/images/monitoring_drift.png)](https://youtu.be/X_ocS6ZOEkY)
 
 ## Key Highlights
 
