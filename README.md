@@ -1,13 +1,13 @@
-# Real-Time Intrusion Detection Pipeline (Kafka, Spark, MLflow + Model Registry, Auto-Retraining)
+# Real-Time Network Traffic Classification (Kafka, Spark, MLflow + Model Registry, Auto-Retraining)
 
-A production-grade ML system that:
+An AI-powered firewall for real-time network traffic classification:
 
+- Inspects network traffic in real time and decides whether to ALLOW, ALERT, or BLOCK
 - Detects cyber attacks in real time from streaming network traffic
 - Automatically retrains on new data
 - Monitors model performance and data drift
 - Performs automatic rollback when degradation is detected
 
-This project simulates how modern security systems maintain reliability in dynamic environments.
 
 ## 🎥 System Demo
 
