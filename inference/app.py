@@ -155,7 +155,7 @@ def run_inference(data: dict, with_explanation: bool = False):
                 sentence = build_feature_sentence(f, v, s)
                 details.append(sentence)
 
-            response["details"] = details
+            response["shap_top_features"] = details
 
             # -------------------------
             # Add simple explanation
