@@ -12,6 +12,8 @@ import pandas as pd
 from mlflow.tracking import MlflowClient
 from xgboost import XGBClassifier
 from sklearn.model_selection import train_test_split
+import boto3
+from datetime import datetime
 
 from config import (
     DATA_PATH,
@@ -29,6 +31,21 @@ from sklearn.calibration import CalibratedClassifierCV
 from sklearn.metrics import precision_recall_curve
 
 MODEL_NAME = "intrusion_model"
+
+def upload_directory_to_s3(local_dir: str, bucket: str, prefix: str):
+    import os
+    s3 = boto3.client("s3")
+
+    for root, _, files in os.walk(local_dir):
+        for file in files:
+            local_path = os.path.join(root, file)
+            relative_path = os.path.relpath(local_path, local_dir)
+
+            s3_key = f"{prefix}/{relative_path}".replace("\\", "/")
+
+            s3.upload_file(local_path, bucket, s3_key)
+
+    print(f"Uploaded directory to s3://{bucket}/{prefix}")
 
 
 def save_train_distribution(df, feature_columns, path="train_stats.json"):
@@ -459,6 +476,30 @@ def main() -> None:
         feature_columns=feature_columns,
         output_path=output_path
     )
+
+    # -----------------------------
+    # Upload model to S3
+    # -----------------------------
+    BUCKET = "intrusion-ml-models"
+    S3_PREFIX = "models/intrusion"
+
+    timestamp = datetime.utcnow().strftime("%Y%m%d-%H%M%S")
+
+    upload_directory_to_s3(
+        local_dir=str(output_path.parent),
+        bucket=BUCKET,
+        prefix=f"{S3_PREFIX}/{timestamp}"
+    )
+
+    s3 = boto3.client("s3")
+
+    s3.upload_file(
+        str(output_path),
+        BUCKET,
+        f"{S3_PREFIX}/latest/model.joblib"
+    )
+
+    print("Uploaded model version + latest pointer")
 
 
     print("=== Proba stats: ===")
