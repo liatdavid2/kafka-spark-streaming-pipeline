@@ -760,61 +760,61 @@ This system includes a rule-based policy layer that detects known attack pattern
 
 ## Attack Types & Feature-Based Indicators
 
-**DoS**
+**DoS**  
 Very high traffic sent in a short time to overload a system and make it unavailable.
 Indicators: high `spkts` (source packets), `dpkts` (destination packets), high `sload` (source bytes/sec) / `dload` (destination bytes/sec), very low `sintpkt` (source inter-packet time) / `dintpkt` (destination inter-packet time), high `ct_srv_src` (connections per service from source), high `ct_dst_ltm` (connections to destination over time).
 
 ---
 
-**Reconnaissance**
+**Reconnaissance**  
 Scanning activity used to find open ports, services, or network structure.
 Indicators: short `dur` (connection duration), low `sbytes` (bytes sent) / `dbytes` (bytes received), high `ct_dst_ltm` (connections to destination), high `ct_srv_dst` (connections per service to destination), high `ct_dst_src_ltm` (connections between same src-dst), multiple ports via `ct_src_dport_ltm` (connections per destination port).
 
 ---
 
-**Exploits**
+**Exploits**  
 Attempts to take advantage of system or application vulnerabilities.
 Indicators: `trans_depth` (HTTP transaction depth), `res_bdy_len` (response body size), `ct_flw_http_mthd` (HTTP methods count), `is_ftp_login` (FTP login attempt flag), abnormal `tcprtt` (TCP round-trip time), unusual `sttl` (source TTL) / `dttl` (destination TTL), high `ct_state_ttl` (state-TTL combinations).
 
 ---
 
-**Fuzzers**
+**Fuzzers**  
 Sending random or malformed data to break or confuse a system.
 Indicators: high `spkts` (source packets) with low `sbytes` (bytes sent), small `smeansz` (average source packet size), small `dmeansz` (average destination packet size), high `sjit` (source jitter) / `djit` (destination jitter).
 
 ---
 
-**Backdoors**
+**Backdoors**  
 Hidden communication that allows ongoing unauthorized access to a system.
 Indicators: long `dur` (connection duration), low but stable `sbytes` (bytes sent) / `dbytes` (bytes received), repeated connections via `ct_src_ltm` (connections from source over time), stable `tcprtt` (round-trip time).
 
 ---
 
-**Analysis**
+**Analysis**  
 Probing activity used to understand how a system behaves and find weak points.
 Indicators: moderate `dur` (connection duration), high `ct_dst_ltm` (connections to destination), moderate `trans_depth` (application interaction depth), variable `tcprtt` (round-trip time).
 
 ---
 
-**Shellcode**
+**Shellcode**  
 Attempts to send and execute malicious code on the target system.
 Indicators: `trans_depth` (application interaction), abnormal `res_bdy_len` (response size), very low `tcprtt` (round-trip time), low `synack` (SYN-ACK time), inconsistent `sttl` (source TTL) / `dttl` (destination TTL).
 
 ---
 
-**Worms**
+**Worms**  
 Malware that spreads automatically across many systems or ports.
 Indicators: high `ct_dst_ltm` (connections to destination), high `ct_srv_dst` (connections per service to destination), high `ct_dst_src_ltm` (connections between src-dst), multiple ports via `ct_src_dport_ltm` (destination ports per source), high `ct_dst_sport_ltm` (source ports per destination).
 
 ---
 
-**Generic**
+**Generic**  
 Unusual traffic that does not match a specific attack but looks abnormal.
 Indicators: abnormal ratio between `sbytes` (bytes sent) and `dbytes` (bytes received), unusual `smeansz` (avg source packet size) / `dmeansz` (avg destination packet size), high `sjit` (source jitter) / `djit` (destination jitter).
 
 ---
 
-**Normal Traffic**
+**Normal Traffic**  
 Regular network activity with stable and expected behavior.
 Indicators: balanced `sbytes` (bytes sent) / `dbytes` (bytes received), stable `sintpkt` (source inter-packet time) / `dintpkt` (destination inter-packet time), low `ct_*` (connection counters), consistent `tcprtt` (round-trip time).
 
