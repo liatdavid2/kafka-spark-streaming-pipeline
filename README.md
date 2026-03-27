@@ -13,7 +13,7 @@ An AI-powered firewall for real-time network traffic classification:
 
 ### Real-Time Inference API
 Real-time AI firewall deciding ALLOW / ALERT / BLOCK using Rules and ML, trained on the UNSW-NB15 dataset.
-[![Watch](docs/images/SwaggerAPI.png)](https://youtu.be/0rco39ZGqtI)
+[![Watch](docs/images/SwaggerAPI.png)](https://youtu.be/FzCm-laHeJs)
 
 ### MLflow Training & Promotion
 Model retraining and promotion to production based on performance metrics.
